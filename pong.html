@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pong – Two Player</title>
+  <style>
+    /* ─────────────────────────────────────────────
+       THEME SETTINGS
+       Change these CSS variables to restyle the
+       entire game without touching anything else.
+    ───────────────────────────────────────────── */
+    :root {
+      --bg-color:         #1a1a2e;   /* canvas / page background */
+      --court-color:      #16213e;   /* inner play area */
+      --net-color:        #0f3460;   /* center dashed line */
+      --ball-color:       #e94560;   /* ball fill */
+      --paddle-p1-color:  #00b4d8;   /* left paddle  (Player 1) */
+      --paddle-p2-color:  #90e0ef;   /* right paddle (Player 2) */
+      --score-color:      #ffffff;   /* score & UI text */
+      --ui-font:          'Courier New', Courier, monospace;
+    }
+ 
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+ 
+    body {
+      background: var(--bg-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: var(--ui-font);
+      color: var(--score-color);
+    }
+ 
+    h1 { font-size: 1.4rem; letter-spacing: 4px; margin-bottom: 10px; }
+ 
+    #controls {
+      font-size: 0.72rem;
+      letter-spacing: 1px;
+      opacity: 0.6;
+      margin-bottom: 14px;
+      text-align: center;
+      line-height: 1.8;
+    }
+ 
+    canvas {
+      display: block;
+      background: var(--court-color);
+      border: 2px solid var(--net-color);
+      border-radius: 4px;
+    }
+ 
+    #message {
+      margin-top: 14px;
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      min-height: 1.2em;
+      opacity: 0.85;
+    }
+  </style>
+</head>
+<body>
+ 
+  <h1>🏓 PONG</h1>
+ 
+  <div id="controls">
+    PLAYER 1 (LEFT): W / S &nbsp;|&nbsp; PLAYER 2 (RIGHT): ↑ / ↓
+    <br>
+    Press <strong>SPACE</strong> to start / pause
+  </div>
+ 
+  <canvas id="gameCanvas"></canvas>
+  <div id="message">Press SPACE to start</div>
+ 
+  <script>
+    /* ════════════════════════════════════════════
+       ░░  PONG  ░░  Two-Player Edition
+       ════════════════════════════════════════════
+ 
+       HOW TO CUSTOMISE (great starting points for
+       your collab git repo):
+ 
+       1. COLORS   → edit the CSS :root variables above
+       2. SPEED    → tweak SETTINGS.ball.* & SETTINGS.paddle.*
+       3. WIN CON  → change SETTINGS.winScore
+       4. CANVAS   → change SETTINGS.canvas.width / height
+       5. GAMEPLAY → e.g. add spin, obstacles, power-ups!
+    ════════════════════════════════════════════ */
+ 
+    /* ─────────────────────────────────────────
+       SETTINGS — the single source of truth for
+       all tuneable game parameters.
+    ───────────────────────────────────────────  */
+    const SETTINGS = {
+      canvas: {
+        width:  800,
+        height: 500,
+      },
+      ball: {
+        radius:       8,
+        startSpeed:   5,      // initial speed on each serve
+        speedIncrease: 0.4,   // how much faster after each paddle hit
+        maxSpeed:     14,     // cap so the ball never flies off-screen
+      },
+      paddle: {
+        width:    12,
+        height:   90,
+        speed:    6,          // pixels per frame when key held
+        margin:   18,         // distance from the side wall
+      },
+      winScore: 7,            // first to this score wins the match
+    };
+ 
+    /* ─────────────────────────────────────────
+       CANVAS SETUP
+    ───────────────────────────────────────────  */
+    const canvas  = document.getElementById('gameCanvas');
+    const ctx     = canvas.getContext('2d');
+    const message = document.getElementById('message');
+ 
+    canvas.width  = SETTINGS.canvas.width;
+    canvas.height = SETTINGS.canvas.height;
+ 
+    /* ─────────────────────────────────────────
+       GAME STATE
+       Everything that changes at runtime lives
+       inside this object — easy to reset.
+    ───────────────────────────────────────────  */
+    const state = {
+      running:   false,   // true while game loop is active
+      paused:    false,   // true when SPACE toggles pause mid-game
+      gameOver:  false,
+      scores:    { p1: 0, p2: 0 },
+    };
+ 
+    /* ─────────────────────────────────────────
+       BALL
+    ───────────────────────────────────────────  */
+    const ball = {
+      x:  canvas.width  / 2,
+      y:  canvas.height / 2,
+      vx: SETTINGS.ball.startSpeed,
+      vy: SETTINGS.ball.startSpeed,
+      r:  SETTINGS.ball.radius,
+ 
+      /** Reset ball to center, serve toward the given side. */
+      reset(serveLeft = true) {
+        this.x  = canvas.width  / 2;
+        this.y  = canvas.height / 2;
+        const angle = (Math.random() * 40 - 20) * (Math.PI / 180); // ±20°
+        const speed = SETTINGS.ball.startSpeed;
+        this.vx = (serveLeft ? -1 : 1) * speed * Math.cos(angle);
+        this.vy = speed * Math.sin(angle);
+      },
+    };
+ 
+    /* ─────────────────────────────────────────
+       PADDLES
+    ───────────────────────────────────────────  */
+    const paddleDefaults = {
+      w: SETTINGS.paddle.width,
+      h: SETTINGS.paddle.height,
+      dy: 0,   // current vertical velocity (set by key handlers)
+    };
+ 
+    const p1 = {
+      ...paddleDefaults,
+      x: SETTINGS.paddle.margin,
+      y: canvas.height / 2 - SETTINGS.paddle.height / 2,
+    };
+ 
+    const p2 = {
+      ...paddleDefaults,
+      x: canvas.width - SETTINGS.paddle.margin - SETTINGS.paddle.width,
+      y: canvas.height / 2 - SETTINGS.paddle.height / 2,
+    };
+ 
+    /* ─────────────────────────────────────────
+       INPUT — track which keys are held down
+    ───────────────────────────────────────────  */
+    const keys = {};   // e.g. keys['w'] = true while W is held
+ 
+    document.addEventListener('keydown', e => {
+      keys[e.key] = true;
+ 
+      // SPACE: start, pause, or restart
+      if (e.key === ' ') {
+        e.preventDefault();   // stop page from scrolling
+ 
+        if (state.gameOver) {
+          resetGame();
+          return;
+        }
+        if (!state.running) {
+          startGame();
+        } else {
+          togglePause();
+        }
+      }
+    });
+ 
+    document.addEventListener('keyup', e => {
+      keys[e.key] = false;
+    });
+ 
+    /* ─────────────────────────────────────────
+       HELPERS — keep the game loop readable
+    ───────────────────────────────────────────  */
+ 
+    /** Clamp a value between min and max. */
+    function clamp(val, min, max) {
+      return Math.max(min, Math.min(max, val));
+    }
+ 
+    /** Read CSS variable colors so we respect theme changes at runtime. */
+    function cssVar(name) {
+      return getComputedStyle(document.documentElement)
+               .getPropertyValue(name).trim();
+    }
+ 
+    /* ─────────────────────────────────────────
+       PHYSICS — update ball & paddle positions
+    ───────────────────────────────────────────  */
+ 
+    function movePaddles() {
+      // Player 1: W (up) / S (down)
+      if (keys['w'] || keys['W']) p1.dy = -SETTINGS.paddle.speed;
+      else if (keys['s'] || keys['S']) p1.dy =  SETTINGS.paddle.speed;
+      else p1.dy = 0;
+ 
+      // Player 2: ArrowUp / ArrowDown
+      if (keys['ArrowUp'])   p2.dy = -SETTINGS.paddle.speed;
+      else if (keys['ArrowDown']) p2.dy =  SETTINGS.paddle.speed;
+      else p2.dy = 0;
+ 
+      // Apply movement and keep paddles inside the court
+      p1.y = clamp(p1.y + p1.dy, 0, canvas.height - p1.h);
+      p2.y = clamp(p2.y + p2.dy, 0, canvas.height - p2.h);
+    }
+ 
+    function moveBall() {
+      ball.x += ball.vx;
+      ball.y += ball.vy;
+ 
+      // ── Top / bottom wall bounce
+      if (ball.y - ball.r <= 0) {
+        ball.y  = ball.r;
+        ball.vy = Math.abs(ball.vy);   // force downward
+      }
+      if (ball.y + ball.r >= canvas.height) {
+        ball.y  = canvas.height - ball.r;
+        ball.vy = -Math.abs(ball.vy);  // force upward
+      }
+ 
+      // ── Paddle collision (Player 1)
+      if (
+        ball.x - ball.r <= p1.x + p1.w &&
+        ball.x + ball.r >= p1.x         &&
+        ball.y          >= p1.y          &&
+        ball.y          <= p1.y + p1.h
+      ) {
+        ball.x  = p1.x + p1.w + ball.r;  // push ball out of paddle
+        bounceBallOff(p1, 1);
+      }
+ 
+      // ── Paddle collision (Player 2)
+      if (
+        ball.x + ball.r >= p2.x         &&
+        ball.x - ball.r <= p2.x + p2.w  &&
+        ball.y          >= p2.y          &&
+        ball.y          <= p2.y + p2.h
+      ) {
+        ball.x  = p2.x - ball.r;         // push ball out of paddle
+        bounceBallOff(p2, -1);
+      }
+ 
+      // ── Score: ball leaves left side → P2 scores
+      if (ball.x - ball.r < 0) {
+        score('p2');
+        return;
+      }
+      // ── Score: ball leaves right side → P1 scores
+      if (ball.x + ball.r > canvas.width) {
+        score('p1');
+      }
+    }
+ 
+    /**
+     * Reflect the ball off a paddle.
+     * Adds a small spin effect based on where the ball
+     * hits the paddle (top = upward angle, bottom = downward).
+     *
+     * @param {object} paddle - The paddle object that was hit
+     * @param {number} dir    - +1 = ball now goes right, -1 = left
+     */
+    function bounceBallOff(paddle, dir) {
+      // Normalised hit position: -1 (top) to +1 (bottom)
+      const hitPos  = (ball.y - (paddle.y + paddle.h / 2)) / (paddle.h / 2);
+      const bounceAngle = hitPos * (Math.PI / 4);  // max 45° deflection
+ 
+      // Increase speed a little each rally, capped at maxSpeed
+      const currentSpeed = Math.min(
+        Math.hypot(ball.vx, ball.vy) + SETTINGS.ball.speedIncrease,
+        SETTINGS.ball.maxSpeed
+      );
+ 
+      ball.vx = dir * currentSpeed * Math.cos(bounceAngle);
+      ball.vy =       currentSpeed * Math.sin(bounceAngle);
+    }
+ 
+    /* ─────────────────────────────────────────
+       SCORING
+    ───────────────────────────────────────────  */
+    function score(player) {
+      state.scores[player]++;
+ 
+      if (state.scores[player] >= SETTINGS.winScore) {
+        endGame(player);
+      } else {
+        // Serve toward the player who just lost the point
+        ball.reset(player === 'p1');   // scored on p2 → serve left; p1 → right
+        resetPaddles();
+      }
+    }
+ 
+    /* ─────────────────────────────────────────
+       DRAWING — everything on the canvas
+    ───────────────────────────────────────────  */
+ 
+    function draw() {
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+ 
+      // ── Center net (dashed line)
+      ctx.setLineDash([10, 14]);
+      ctx.strokeStyle = cssVar('--net-color');
+      ctx.lineWidth   = 3;
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2, 0);
+      ctx.lineTo(canvas.width / 2, canvas.height);
+      ctx.stroke();
+      ctx.setLineDash([]);
+ 
+      // ── Scores
+      ctx.fillStyle = cssVar('--score-color');
+      ctx.font      = 'bold 48px ' + cssVar('--ui-font');
+      ctx.textAlign = 'center';
+      ctx.fillText(state.scores.p1, canvas.width / 4,       60);
+      ctx.fillText(state.scores.p2, canvas.width * 3 / 4,   60);
+ 
+      // ── Player labels (subtle)
+      ctx.font      = '12px ' + cssVar('--ui-font');
+      ctx.globalAlpha = 0.4;
+      ctx.fillText('P1', canvas.width / 4,     80);
+      ctx.fillText('P2', canvas.width * 3 / 4, 80);
+      ctx.globalAlpha = 1;
+ 
+      // ── Paddles
+      ctx.fillStyle = cssVar('--paddle-p1-color');
+      ctx.beginPath();
+      ctx.roundRect(p1.x, p1.y, p1.w, p1.h, 4);
+      ctx.fill();
+ 
+      ctx.fillStyle = cssVar('--paddle-p2-color');
+      ctx.beginPath();
+      ctx.roundRect(p2.x, p2.y, p2.w, p2.h, 4);
+      ctx.fill();
+ 
+      // ── Ball (circle with a glow effect)
+      ctx.shadowColor = cssVar('--ball-color');
+      ctx.shadowBlur  = 12;
+      ctx.fillStyle   = cssVar('--ball-color');
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur  = 0;   // reset shadow so it doesn't bleed onto text
+ 
+      // ── Pause overlay
+      if (state.paused) {
+        ctx.fillStyle   = 'rgba(0,0,0,0.45)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = cssVar('--score-color');
+        ctx.font      = 'bold 32px ' + cssVar('--ui-font');
+        ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+        ctx.font      = '14px ' + cssVar('--ui-font');
+        ctx.fillText('Press SPACE to resume', canvas.width / 2, canvas.height / 2 + 36);
+      }
+    }
+ 
+    /* ─────────────────────────────────────────
+       GAME LOOP  (requestAnimationFrame)
+    ───────────────────────────────────────────  */
+    let animId = null;
+ 
+    function loop() {
+      if (!state.paused) {
+        movePaddles();
+        moveBall();
+      }
+      draw();
+      animId = requestAnimationFrame(loop);
+    }
+ 
+    /* ─────────────────────────────────────────
+       GAME CONTROL FUNCTIONS
+    ───────────────────────────────────────────  */
+ 
+    function startGame() {
+      state.running  = true;
+      state.paused   = false;
+      state.gameOver = false;
+      message.textContent = '';
+      ball.reset(Math.random() < 0.5);  // random first serve
+      loop();
+    }
+ 
+    function togglePause() {
+      state.paused = !state.paused;
+      message.textContent = state.paused ? '' : '';
+    }
+ 
+    function endGame(winner) {
+      state.running  = false;
+      state.gameOver = true;
+      cancelAnimationFrame(animId);
+ 
+      // Draw one final frame so the last score is visible
+      draw();
+ 
+      const label = winner === 'p1' ? 'PLAYER 1' : 'PLAYER 2';
+      message.textContent = `🏆 ${label} WINS!  Press SPACE to play again.`;
+    }
+ 
+    function resetGame() {
+      cancelAnimationFrame(animId);
+      state.scores   = { p1: 0, p2: 0 };
+      state.gameOver = false;
+      state.paused   = false;
+      resetPaddles();
+      ball.reset(true);
+      message.textContent = '';
+      startGame();
+    }
+ 
+    function resetPaddles() {
+      p1.y = canvas.height / 2 - p1.h / 2;
+      p2.y = canvas.height / 2 - p2.h / 2;
+      p1.dy = 0;
+      p2.dy = 0;
+    }
+ 
+    /* ─────────────────────────────────────────
+       INITIAL RENDER — show the court before
+       the first game begins.
+    ───────────────────────────────────────────  */
+    resetPaddles();
+    ball.reset(true);
+    draw();
+  </script>
+</body>
+</html>
