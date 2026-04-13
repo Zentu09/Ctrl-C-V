@@ -353,8 +353,8 @@
       // ── Player labels (subtle)
       ctx.font      = '12px ' + cssVar('--ui-font');
       ctx.globalAlpha = 0.4;
-      ctx.fillText('P1', canvas.width / 4,     80);
-      ctx.fillText('P2', canvas.width * 3 / 4, 80);
+      ctx.fillText('ChinoBaby', canvas.width / 4,     80);
+      ctx.fillText('Artkun', canvas.width * 3 / 4, 80);
       ctx.globalAlpha = 1;
  
       // ── Paddles
@@ -429,7 +429,7 @@
       // Draw one final frame so the last score is visible
       draw();
  
-      const label = winner === 'p1' ? 'PLAYER 1' : 'PLAYER 2';
+      const label = winner === 'p1' ? 'ChinoBaby' : 'Artkun';
       message.textContent = `🏆 ${label} WINS!  Press SPACE to play again.`;
     }
  
