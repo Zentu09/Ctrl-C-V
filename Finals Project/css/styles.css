@@ -1,0 +1,57 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+}
+
+.controls {
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+input {
+    padding: 8px;
+    width: 200px;
+}
+
+button {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+table {
+    width: 1300px;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+th:nth-child(1), td:nth-child(1) {
+    width: 150px;
+}
+
+th:nth-child(2), td:nth-child(2) {
+    width: 80px;
+}
+
+th:nth-child(3), td:nth-child(3) {
+    width: 60px;
+}
+
+th:nth-child(n+4):nth-child(-n+16),
+td:nth-child(n+4):nth-child(-n+16) {
+    width: 70px;
+}
+
+th {
+    white-space: normal;     /* allow wrapping */
+    word-break: keep-all;    /* 🔥 prevent breaking words */
+    overflow-wrap: normal;   /* no forced breaks */
+}
