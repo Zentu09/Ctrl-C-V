@@ -8,8 +8,20 @@
     <link rel="stylesheet" href="css/styles_chino.css">
 </head>
 <body>
+
+    <div class="header">
+
+    </div>
+
+
+    <div class="sidebar">
+        <a href="#section-art" class="sidebar-link active" data-target="section-art">Dataset Viewer</a>
+        <a href="#section-chino" class="sidebar-link" data-target="section-chino">Section 2</a>
+        <a href="#section-cj" class="sidebar-link" data-target="section-cj">Section 3</a>
+    </div>
+
     <!-- PART NI ART -->
-    <div> 
+    <div id="section-art" class="main-content"> 
         <h1>Dataset Viewer</h1>
 
         <div class="controls">
@@ -17,20 +29,35 @@
             <button onclick="sortTable()">Sort</button>
         </div>
 
-        <table id="dataTable">
-            <thead></thead>
-            <tbody></tbody>
-        </table>
+        <div class="layer-tab">
+            <div class="tab-con">
+                <table id="dataTable"><thead></thead><tbody></tbody></table>
+            </div>
+        </div>
+        
+        <div id="modal" class="modal hidden">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <span id="closeModal" class="close">&times;</span>
+                    <div id="modalTitle"></div>
+                </div>
+
+                <div id="modalBody" class="modal-body"></div>
+
+            </div>
+        </div>
+
+
     </div>
 
     <!-- PART NI CHINO -->
-    <div>
+    <div id="section-chino" class="main-content">
 
     </div>
 
     <!-- PART NI CJ-->
-    <div>
-
+    <div id="section-cj" class="main-content">
     </div>
 
     
