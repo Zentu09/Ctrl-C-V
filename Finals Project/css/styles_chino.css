@@ -1,0 +1,233 @@
+/* =============================================
+   styles_chino.css — Chart Section Styles
+   Dark dashboard aesthetic, works alongside
+   existing styles.css / styles_cj.css
+   ============================================= */
+
+body {
+  overflow-y: auto;
+}
+
+.main-content {
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+/* ── Section wrapper ──────────────────────────── */
+#section-chino {
+  padding: 32px 36px;
+  background: #111827;
+  min-height: 100vh;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ── Section header ───────────────────────────── */
+#section-chino .chino-header {
+  margin-bottom: 32px;
+}
+
+#section-chino .chino-header h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+}
+
+#section-chino .chino-header p {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* ── Region Selector ──────────────────────────── */
+.chino-region-selector {
+  margin-bottom: 28px;
+  padding: 16px 20px;
+  background: #1e293b;
+  border-radius: 8px;
+  border-left: 4px solid #4f8ef7;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chino-region-selector label {
+  color: #e2e8f0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.chino-region-selector select {
+  padding: 8px 12px;
+  background: #0f172a;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  min-width: 200px;
+}
+
+.chino-region-selector select:hover {
+  border-color: #4f8ef7;
+}
+
+.chino-region-selector select:focus {
+  outline: none;
+  border-color: #4f8ef7;
+  box-shadow: 0 0 0 3px rgba(79, 142, 247, 0.1);
+}
+
+.chino-region-selector select option {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+/* ── Chart grid ───────────────────────────────── */
+.chino-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .chino-chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Individual chart card ────────────────────── */
+.chino-chart-card {
+  background: #1e293b;
+  border: 1px solid #2d3748;
+  border-radius: 14px;
+  padding: 20px 22px 16px;
+  position: relative;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.chino-chart-card:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+/* ── Chart card title ─────────────────────────── */
+.chino-chart-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  margin: 0 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chino-chart-subtitle {
+  font-size: 0.78rem;
+  color: #475569;
+  margin: 0 0 16px 0;
+}
+
+/* ── Canvas wrapper (controls height) ────────── */
+.chino-canvas-wrap {
+  position: relative;
+  height: 280px;
+  width: 100%;
+}
+
+.chino-canvas-wrap canvas {
+  display: block;
+}
+
+/* ── Refresh button on each card ─────────────── */
+.chino-refresh-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: #2d3748;
+  border: 1px solid #3d4f63;
+  color: #94a3b8;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.chino-refresh-btn:hover {
+  background: #3d4f63;
+  color: #e2e8f0;
+}
+
+/* ── No-data placeholder ─────────────────────── */
+.chino-no-data {
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  font-size: 0.85rem;
+  border: 2px dashed #2d3748;
+  border-radius: 8px;
+}
+
+/* ── Loading shimmer ──────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+.chino-loading {
+  height: 280px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #1e293b 25%, #2d3748 50%, #1e293b 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+/* ── Fix for multiple chart grids stacking ───── */
+#section-chino .chino-chart-grid + .chino-chart-grid {
+  margin-top: 28px;
+}
+
+/* ── Ensure ALL canvases behave consistently ─── */
+canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ── Improve responsiveness for many charts ─── */
+@media (max-width: 1200px) {
+  .chino-chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Slight polish for new charts (optional) ─── */
+.chino-chart-card canvas {
+  image-rendering: auto;
+}
+
+/* ── Better empty state (matches JS fallback) ─ */
+.chino-chart-card .no-data-text {
+  color: #64748b;
+  font-size: 0.85rem;
+  text-align: center;
+  padding-top: 120px;
+}
+
+/* ── Scroll smoothing (nice UX) ─────────────── */
+#section-chino {
+  scroll-behavior: smooth;
+}
+
+/* ── Optional: subtle glow on hover ─────────── */
+.chino-chart-card:hover {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+}

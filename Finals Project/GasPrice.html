@@ -54,6 +54,53 @@
     <!-- PART NI CHINO -->
     <div id="section-chino" class="main-content">
 
+        <div class="chino-header">
+            <h2>📈 Regional Data Visualizations</h2>
+            <p>Select a region to view all countries and their fuel metrics</p>
+        </div>
+
+        <!-- Region Selector -->
+        <div class="chino-region-selector">
+            <label for="regionSelect"><strong>🌍 Select Region:</strong></label>
+            <select id="regionSelect" onchange="onRegionChange()">
+                <!-- Populated dynamically by script_chino.js -->
+            </select>
+        </div>
+
+        <div class="chino-chart-grid">
+
+            <!-- REQUIRED CHARTS -->
+
+
+                        <div class="chino-chart-card">
+                                <p class="chino-chart-title">📊 Bar Chart</p>
+                                <div class="chino-canvas-wrap">
+                                    <canvas id="barChart"></canvas>
+                                </div>
+                        </div>
+
+                        <div class="chino-chart-card">
+                                <p class="chino-chart-title">📍 Scatter Plot</p>
+                                <div class="chino-canvas-wrap">
+                                    <canvas id="scatterChart"></canvas>
+                                </div>
+                        </div>
+
+                        <div class="chino-chart-card">
+                                <p class="chino-chart-title">📊 Histogram</p>
+                                <div class="chino-canvas-wrap">
+                                    <canvas id="histChart"></canvas>
+                                </div>
+                        </div>
+
+                        <div class="chino-chart-card">
+                                <p class="chino-chart-title">🥧 Pie Chart</p>
+                                <div class="chino-canvas-wrap">
+                                    <canvas id="pieChart"></canvas>
+                                </div>
+                        </div>
+
+        </div>
     </div>
 
     <!-- PART NI CJ-->
@@ -139,6 +186,9 @@
     </div>
     
 
+    <!-- Chart.js library for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <script src="js/script.js"></script>
     <script src="js/script_cj.js"></script>
     <script src="js/script_chino.js"></script>
