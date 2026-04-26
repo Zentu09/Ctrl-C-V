@@ -62,63 +62,71 @@
         <!-- PART NI CHINO -->
         <div id="section-chino" class="section">
             <div class="card2 chino-2">
-                <div class="chino-header">
-                    <h2>📈 Regional Data Visualizations</h2>
-                    <p>Select a region to view all countries and their fuel metrics</p>
-                </div>
-
-                <!-- Region Selector -->
-                <div class="chino-region-selector">
-                    <label for="regionSelect"><strong>🌍 Select Region:</strong></label>
-                    <select id="regionSelect" onchange="onRegionChange()">
-                        <!-- Populated dynamically by script_chino.js -->
-                    </select>
-                </div>
-
-                <div class="chino-region-selector">
-                    <label><strong>🏳️ Select Country:</strong></label>
-                    <select id="countrySelect" onchange="onCountryChange()">
-                        <option value="">All Countries (Region View)</option>
-                    </select>
-                </div>
-
-                <div class="chino-chart-grid">
-
-                    <!-- REQUIRED CHARTS -->
-
-
-                                <div class="chino-chart-card">
-                                        <p class="chino-chart-title">📊 Bar Chart</p>
-                                        <div class="chino-canvas-wrap">
-                                            <canvas id="barChart"></canvas>
-                                        </div>
-                                </div>
-
-                                <div class="chino-chart-card">
-                                        <p class="chino-chart-title">📍 Scatter Plot</p>
-                                        <div class="chino-canvas-wrap">
-                                            <canvas id="scatterChart"></canvas>
-                                        </div>
-                                </div>
-
-                                <div class="chino-chart-card">
-                                        <p class="chino-chart-title">📊 Histogram</p>
-                                        <div class="chino-canvas-wrap">
-                                            <canvas id="histChart"></canvas>
-                                        </div>
-                                </div>
-
-                                <div class="chino-chart-card">
-                                        <p class="chino-chart-title">🥧 Pie Chart</p>
-                                        <div class="chino-canvas-wrap">
-                                            <canvas id="pieChart"></canvas>
-                                        </div>
-                                </div>
-
-                </div>
-                
+               <div class="chino-header">
+                <h2>📈 Regional Data Visualizations</h2>
+                <p>Select a region to view all countries and their fuel metrics</p>
             </div>
-        </div>
+
+            <!-- Region Selector -->
+            <div class="chino-region-selector">
+                <label for="regionSelect"><strong>🌍 Select Region:</strong></label>
+                <select id="regionSelect" onchange="onRegionChange()"></select>
+            </div>
+
+            <!-- Metric Selector -->
+            <div class="chino-region-selector">
+                <label><strong>📊 Select Metric:</strong></label>
+                <select id="metricSelect" onchange="onMetricChange()">
+                    <option value="gasoline_usd_per_liter">Gasoline USD/Liter</option>
+                    <option value="diesel_usd_per_liter">Diesel USD/Liter</option>
+                    <option value="lpg_usd_per_kg">LPG USD/Kg</option>
+                    <option value="avg_monthly_income_usd">Avg Monthly Income USD</option>
+                    <option value="fuel_affordability_index">Fuel Affordability Index</option>
+                    <option value="oil_import_dependency_pct">Oil Import Dependency %</option>
+                    <option value="refinery_capacity_kbpd">Refinery Capacity KBPD</option>
+                    <option value="ev_adoption_pct">EV Adoption %</option>
+                    <option value="subsidy_cost_bn_usd">Subsidy Cost Bn USD</option>
+                    <option value="co2_transport_mt">CO2 Transport Mt</option>
+                    <option value="gasoline_pct_daily_wage">Gasoline % Daily Wage</option>
+                </select>
+            </div>
+
+            <!-- INSIGHTS -->
+            <div id="chino-insights" class="stats-grid"></div>
+
+            <!-- CHARTS -->
+            <div class="chino-chart-grid">
+
+                <div class="chino-chart-card">
+                    <p class="chino-chart-title">Bar Chart</p>
+                    <div class="chino-canvas-wrap">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chino-chart-card">
+                    <p class="chino-chart-title">Scatter Plot</p>
+                    <div class="chino-canvas-wrap">
+                        <canvas id="scatterChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chino-chart-card">
+                    <p class="chino-chart-title">Histogram</p>
+                    <div class="chino-canvas-wrap">
+                        <canvas id="histChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chino-chart-card">
+                    <p class="chino-chart-title">Pie Chart</p>
+                    <div class="chino-canvas-wrap">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+      </div>
+               
 
         <!-- PART NI CJ-->
         <div id="section-cj" class="section" >
