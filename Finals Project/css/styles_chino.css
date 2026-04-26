@@ -4,16 +4,6 @@
    existing styles.css / styles_cj.css
    ============================================= */
 
-body {
-  overflow-y: auto;
-}
-
-.main-content {
-  overflow-y: auto;
-  max-height: 100vh;
-}
-
-
 
 #section-chino { 
   
