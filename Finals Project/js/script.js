@@ -290,12 +290,13 @@ if (searchInput) {
 // ====================== SIDEBAR NAVIGATION (Fixed Smooth Scroll) ======================
 document.addEventListener('DOMContentLoaded', function() {
     const sidebarLinks = document.querySelectorAll('.sidebar-link');
+    const container = document.querySelector('.main-content');
 
     sidebarLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
 
-            // Remove active from all links
+            // Active state
             sidebarLinks.forEach(l => l.classList.remove('active'));
             this.classList.add('active');
 
@@ -303,13 +304,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const targetElement = document.getElementById(targetId);
 
             if (targetElement) {
-                // Smooth scroll with proper offset for fixed header + sidebar
-                const headerOffset = 90; // Increased for safety
-                const elementPosition = targetElement.getBoundingClientRect().top;
-                const offsetPosition = elementPosition + window.scrollY - headerOffset;
-
-                window.scrollTo({
-                    top: offsetPosition,
+                container.scrollTo({
+                    top: targetElement.offsetTop,
                     behavior: 'smooth'
                 });
             }
