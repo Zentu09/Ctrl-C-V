@@ -8,6 +8,8 @@ const visibleColumns = [
     "Price Date"
 ];
 
+let markedRows = JSON.parse(localStorage.getItem("markedRows")) || {};
+
 let dataset = [];
 let filteredData = [];
 let selectedRegions = new Set();
@@ -242,35 +244,77 @@ function renderTable(data) {
         return;
     }
 
-    // Header
+    // Load saved marks
+    
+
+    // HEADER
     const headerRow = document.createElement("tr");
     visibleColumns.forEach(col => {
         const th = document.createElement("th");
         th.textContent = col;
         headerRow.appendChild(th);
     });
+
     const detailTh = document.createElement("th");
-    detailTh.textContent = "Details";
+    detailTh.textContent = "Actions";
     headerRow.appendChild(detailTh);
+
     thead.appendChild(headerRow);
 
-    // Rows
+    // ROWS
     data.forEach(row => {
         const tr = document.createElement("tr");
 
+        // IMPORTANT: unique ID (adjust if needed)
+        const rowId = row.id;
+        tr.dataset.id = rowId;
+
+        // restore marked state
+        if (markedRows[rowId]) {
+            tr.classList.add("marked");
+        }
+
+        // cells
         row.getTableRow().forEach(cell => {
             const td = document.createElement("td");
-            td.textContent = (cell != null) ? cell : '';
+            td.textContent = cell != null ? cell : "";
             tr.appendChild(td);
         });
 
+        // actions
         const actionTd = document.createElement("td");
-        const btn = document.createElement("button");
-        btn.textContent = "View";
-        btn.addEventListener("click", () => openModal(row));
-        actionTd.appendChild(btn);
+
+        // INFO BUTTON
+        const infoBtn = document.createElement("button");
+        infoBtn.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+        infoBtn.addEventListener("click", () => openModal(row));
+
+        // MARK BUTTON
+        const markBtn = document.createElement("button");
+        markBtn.innerHTML = '<i class="fa-solid fa-marker"></i>';
+        markBtn.classList.add("mark-btn");
+
+        markBtn.addEventListener("click", () => {
+            const id = row.id;
+
+            if (!id) return; // safety
+
+            if (markedRows[id]) {
+                delete markedRows[id];
+                tr.classList.remove("marked");
+            } else {
+                markedRows[id] = true;
+                tr.classList.add("marked");
+            }
+
+            localStorage.setItem("markedRows", JSON.stringify(markedRows));
+        });
+
+        actionTd.appendChild(infoBtn);
+        actionTd.appendChild(markBtn);
         tr.appendChild(actionTd);
 
+        // ✅ IMPORTANT FIX
         tbody.appendChild(tr);
     });
 }
@@ -331,13 +375,17 @@ function loadDataset() {
 class FuelData {
     constructor(data) {
         this.raw = data;
+
+        // ✅ FIX: stable unique ID
+        this.id = data.country + "_" + data.price_date;
+
         this.country = data.country;
         this.gasoline = data.gasoline_usd_per_liter;
         this.diesel = data.diesel_usd_per_liter;
         this.lpg = data.lpg_usd_per_kg;
         this.index = data.fuel_affordability_index;
         this.oil_import = data.oil_import_dependency_pct;
-        this.subsidy = data.fuel_subsidy_active;  
+        this.subsidy = data.fuel_subsidy_active;
         this.date = data.price_date;
     }
 
