@@ -209,41 +209,23 @@ function updateMetric() {
 }
 
 function loadCountries() {
-    fetch('asia_fuel_prices_detailed.csv')
-        .then(response => response.text())
-        .then(csvText => {
-            const lines = csvText.trim().split('\n');
-            const headers = lines[0].split(',');
-            
-            // Parse CSV
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',');
-                const record = {};
-                headers.forEach((header, index) => {
-                    record[header.trim()] = values[index] ? values[index].trim() : '';
-                });
-                csvData.push(record);
-            }
-            
-            // Get unique regions (sub_region) instead of countries
-            allCountries = [...new Set(csvData.map(record => record.sub_region))].sort();
-            
-            // Display all regions
-            displayCountriesList(allCountries);
-            
-            // Set up search by region
-            document.getElementById('countrySearch').addEventListener('input', (e) => {
-                const searchTerm = e.target.value.toLowerCase();
-                const filtered = allCountries.filter(region => 
-                    region.toLowerCase().includes(searchTerm)
-                );
-                displayCountriesList(filtered);
-            });
-        })
-        .catch(error => {
-            console.error('Error loading CSV:', error);
-            document.getElementById('selectedCountry').textContent = 'Error loading data';
-        });
+    // Use embedded data instead of fetching
+    csvData = embeddedDataset;
+    
+    // Get unique regions (sub_region)
+    allCountries = [...new Set(csvData.map(record => record.sub_region))].sort();
+    
+    // Display all regions
+    displayCountriesList(allCountries);
+    
+    // Set up search by region
+    document.getElementById('countrySearch').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const filtered = allCountries.filter(region => 
+            region.toLowerCase().includes(searchTerm)
+        );
+        displayCountriesList(filtered);
+    });
 }
 
 // Load countries when page is ready
