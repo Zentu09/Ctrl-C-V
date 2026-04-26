@@ -4,10 +4,21 @@
    existing styles.css / styles_cj.css
    ============================================= */
 
+body {
+  overflow-y: auto;
+}
 
-#section-chino { 
-  
-  
+.main-content {
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+/* ── Section wrapper ──────────────────────────── */
+#section-chino {
+  padding: 32px 36px;
+  background: #111827;
+  min-height: 100vh;
+  box-sizing: border-box;
   font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 

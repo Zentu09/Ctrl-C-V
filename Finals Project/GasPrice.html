@@ -20,48 +20,49 @@
         <a href="#section-cj" class="sidebar-link" data-target="section-cj">Data Analysis</a>
     </div>
 
-    <div class="main-content">   
+    <div class="main-content">         
 
         <!-- PART NI ART -->
+        
         <div id="section-art" class="section"> 
         
+            <div class="card1">
+                <div class="controls">
+                    <input type="text" class="box-input" id="searchInput" placeholder="Search Values...">
+                    <button onclick="openFilterModal()"><i class="fa fa-filter" aria-hidden="true"></i></button>
+                </div>
 
-            <div class="controls">
-                <input type="text" class="box-input" id="searchInput" placeholder="Search Values...">
-                <button onclick="openFilterModal()"><i class="fa fa-filter" aria-hidden="true"></i></button>
-            </div>
+                <div class="layer-tab">
+                    <div class="tab-con">
+                        <div class="table-wrapper">
+                            <table id="dataTable">
+                                <thead></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="modal" class="modal hidden">
+                    <div class="modal-content">
 
-            <div class="layer-tab">
-                <div class="tab-con">
-                    <div class="table-wrapper">
-                        <table id="dataTable">
-                            <thead></thead>
-                            <tbody></tbody>
-                        </table>
+                        <div class="modal-header">
+                            <span id="closeModal" class="close">&times;</span>
+                            <div id="modalTitle"></div>
+                        </div>
+
+                        <div id="modalBody" class="modal-body"></div>
+
                     </div>
                 </div>
             </div>
-            
-            <div id="modal" class="modal hidden">
-                <div class="modal-content">
-
-                    <div class="modal-header">
-                        <span id="closeModal" class="close">&times;</span>
-                        <div id="modalTitle"></div>
-                    </div>
-
-                    <div id="modalBody" class="modal-body"></div>
-
-                </div>
-            </div>
-
 
         </div>
 
-                <!-- PART NI CHINO -->
+        <!-- PART NI CHINO -->
         <div id="section-chino" class="section">
-
-            <div class="chino-header">
+            <div class="card2 chino-2">
+               <div class="chino-header">
                 <h2>📈 Regional Data Visualizations</h2>
                 <p>Select a region to view all countries and their fuel metrics</p>
             </div>
@@ -123,98 +124,99 @@
                         <canvas id="pieChart"></canvas>
                     </div>
                 </div>
-
             </div>
-
-        </div>
+      </div>
+               
 
         <!-- PART NI CJ-->
         <div id="section-cj" class="section" >
-        <div id="cj-statistical-engine">
-            <div class="engine-header">
-                <h2>📊 Statistical Analysis Engine</h2>
-                <p class="data-source">Asia Fuel Prices Analysis by Region</p>
-            </div>
-            
-            <div class="stats-wrapper">
-                <div class="stats-controls">
-                    <div class="control-section">
-                        <h3>🌍 Select Region</h3>
-                        <input type="text" id="countrySearch" placeholder="🔍 Search region...">
-                        <div id="countryList" class="country-list"></div>
+            <div class="card3">
+                <div id="cj-statistical-engine">
+                    <div class="engine-header">
+                        <h2>📊 Statistical Analysis Engine</h2>
+                        <p class="data-source">Asia Fuel Prices Analysis by Region</p>
                     </div>
                     
-                    <div class="control-section">
-                        <h3>📊 Select Metric</h3>
-                        <select id="metricSelect" onchange="updateMetric()">
-                            <option value="gasoline_usd_per_liter">⛽ Gasoline USD/Liter</option>
-                            <option value="diesel_usd_per_liter">⛽ Diesel USD/Liter</option>
-                            <option value="lpg_usd_per_kg">⛽ LPG USD/Kg</option>
-                            <option value="avg_monthly_income_usd">💰 Avg Monthly Income USD</option>
-                            <option value="fuel_affordability_index">📈 Fuel Affordability Index</option>
-                            <option value="oil_import_dependency_pct">📊 Oil Import Dependency %</option>
-                            <option value="refinery_capacity_kbpd">🏭 Refinery Capacity KBPD</option>
-                            <option value="ev_adoption_pct">🔋 EV Adoption %</option>
-                            <option value="subsidy_cost_bn_usd">💵 Subsidy Cost Bn USD</option>
-                            <option value="co2_transport_mt">♻️ CO2 Transport Mt</option>
-                            <option value="gasoline_pct_daily_wage">📉 Gasoline % Daily Wage</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="stats-output">
-                    <h3 id="selectedCountry">-</h3>
-                    <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-label">Mean</div>
-                                <div class="stat-description" id="meanDescription">This tells you the average value for the selected region.</div>
-                                <div class="stat-value large" id="mean">-</div>
+                    <div class="stats-wrapper">
+                        <div class="stats-controls">
+                            <div class="control-section">
+                                <h3>🌍 Select Region</h3>
+                                <input type="text" id="countrySearch" placeholder="🔍 Search region...">
+                                <div id="countryList" class="country-list"></div>
                             </div>
                             
-                            <div class="stat-card alt">
-                                <div class="stat-label">Median</div>
-                                <div class="stat-description" id="medianDescription">This tells you the middle value after sorting the data.</div>
-                                <div class="stat-value large" id="median">-</div>
-                            </div>
-                            
-                            <div class="stat-card alt-2">
-                                <div class="stat-label">Std Deviation</div>
-                                <div class="stat-description" id="stddevDescription">This tells you how spread out the values are.</div>
-                                <div class="stat-value" id="stddev">-</div>
-                            </div>
-                            
-                            <div class="stat-card alt-3">
-                                <div class="stat-label">Variance</div>
-                                <div class="stat-description" id="varianceDescription">This is another way to show how spread out the values are.</div>
-                                <div class="stat-value" id="variance">-</div>
-                            </div>
-                            
-                            <div class="stat-card stat-full">
-                                <div class="stat-label">Mode (Most Frequent Value)</div>
-                                <div class="stat-description" id="modeDescription">This tells you the value that appears most often.</div>
-                                <div class="stat-value" id="mode">-</div>
-                            </div>
-                            
-                            <div class="stat-card stat-full">
-                                <div class="stat-label">Pearson Correlation</div>
-                                <div class="stat-description" id="pearsonDescription">This tells you how strongly the values move together.</div>
-                                <div class="stat-value" id="pearson">-</div>
-                            </div>
-                            
-                            <div class="stat-card stat-full">
-                                <div class="stat-label">Linear Regression Equation</div>
-                                <div class="stat-description" id="regressionDescription">This shows the trend line and whether the values are going up or down.</div>
-                                <div class="stat-value" id="regression">-</div>
-                            </div>
-                            
-                            <div class="stat-card stat-full">
-                                <div class="stat-label">📊 Total Data Points (Countries)</div>
-                                <div class="stat-value" id="dataCount">-</div>
+                            <div class="control-section">
+                                <h3>📊 Select Metric</h3>
+                                <select id="metricSelect" onchange="updateMetric()">
+                                    <option value="gasoline_usd_per_liter">⛽ Gasoline USD/Liter</option>
+                                    <option value="diesel_usd_per_liter">⛽ Diesel USD/Liter</option>
+                                    <option value="lpg_usd_per_kg">⛽ LPG USD/Kg</option>
+                                    <option value="avg_monthly_income_usd">💰 Avg Monthly Income USD</option>
+                                    <option value="fuel_affordability_index">📈 Fuel Affordability Index</option>
+                                    <option value="oil_import_dependency_pct">📊 Oil Import Dependency %</option>
+                                    <option value="refinery_capacity_kbpd">🏭 Refinery Capacity KBPD</option>
+                                    <option value="ev_adoption_pct">🔋 EV Adoption %</option>
+                                    <option value="subsidy_cost_bn_usd">💵 Subsidy Cost Bn USD</option>
+                                    <option value="co2_transport_mt">♻️ CO2 Transport Mt</option>
+                                    <option value="gasoline_pct_daily_wage">📉 Gasoline % Daily Wage</option>
+                                </select>
                             </div>
                         </div>
+                        
+                        <div class="stats-output">
+                            <h3 id="selectedCountry">-</h3>
+                            <div class="stats-grid">
+                                    <div class="stat-card">
+                                        <div class="stat-label">Mean</div>
+                                        <div class="stat-description" id="meanDescription">This tells you the average value for the selected region.</div>
+                                        <div class="stat-value large" id="mean">-</div>
+                                    </div>
+                                    
+                                    <div class="stat-card alt">
+                                        <div class="stat-label">Median</div>
+                                        <div class="stat-description" id="medianDescription">This tells you the middle value after sorting the data.</div>
+                                        <div class="stat-value large" id="median">-</div>
+                                    </div>
+                                    
+                                    <div class="stat-card alt-2">
+                                        <div class="stat-label">Std Deviation</div>
+                                        <div class="stat-description" id="stddevDescription">This tells you how spread out the values are.</div>
+                                        <div class="stat-value" id="stddev">-</div>
+                                    </div>
+                                    
+                                    <div class="stat-card alt-3">
+                                        <div class="stat-label">Variance</div>
+                                        <div class="stat-description" id="varianceDescription">This is another way to show how spread out the values are.</div>
+                                        <div class="stat-value" id="variance">-</div>
+                                    </div>
+                                    
+                                    <div class="stat-card stat-full">
+                                        <div class="stat-label">Mode (Most Frequent Value)</div>
+                                        <div class="stat-description" id="modeDescription">This tells you the value that appears most often.</div>
+                                        <div class="stat-value" id="mode">-</div>
+                                    </div>
+                                    
+                                    <div class="stat-card stat-full">
+                                        <div class="stat-label">Pearson Correlation</div>
+                                        <div class="stat-description" id="pearsonDescription">This tells you how strongly the values move together.</div>
+                                        <div class="stat-value" id="pearson">-</div>
+                                    </div>
+                                    
+                                    <div class="stat-card stat-full">
+                                        <div class="stat-label">Linear Regression Equation</div>
+                                        <div class="stat-description" id="regressionDescription">This shows the trend line and whether the values are going up or down.</div>
+                                        <div class="stat-value" id="regression">-</div>
+                                    </div>
+                                    
+                                    <div class="stat-card stat-full">
+                                        <div class="stat-label">📊 Total Data Points (Countries)</div>
+                                        <div class="stat-value" id="dataCount">-</div>
+                                    </div>
+                                </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
         </div>
     </div>
 
