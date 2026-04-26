@@ -147,31 +147,56 @@ function drawBarChart(dataset, region) {
       labels: rows.map(r => r.label),
       datasets: [{
         label: getMetricLabel(selectedMetric),
-        data: rows.map(r => r.value)
+        data: rows.map(r => r.value),
+        borderRadius: 8,
+        backgroundColor: "#3b82f6",
+        hoverBackgroundColor: "#60a5fa" // 🔥 hover color
       }]
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
+
+      interaction: {
+        mode: "index",
+        intersect: false
+      },
+
       plugins: {
-      legend: {
-        labels: {
-          color: "#e5e7eb",
-          font: {
-            size: 12,
-            weight: "600"
+        legend: {
+          labels: {
+            color: "#e5e7eb",
+            font: {
+              size: 12,
+              weight: "600"
+            }
+          }
+        },
+
+        tooltip: {
+          backgroundColor: "#111",
+          titleColor: "#fff",
+          bodyColor: "#fff",
+          borderColor: "#333",
+          borderWidth: 1,
+          callbacks: {
+            label: function(context) {
+              return `${context.label}: ${formatNumber(context.raw)}`;
+            }
           }
         }
-      }
-    },
-    scales: {
-      x: {
-        ticks: { color: "#9ca3af" },
-        grid: { color: "rgba(255,255,255,0.05)" }
       },
-      y: {
-        ticks: { color: "#9ca3af" },
-        grid: { color: "rgba(255,255,255,0.05)" }
+
+      scales: {
+        x: {
+          ticks: { color: "#9ca3af" },
+          grid: { color: "rgba(255,255,255,0.05)" }
+        },
+        y: {
+          ticks: { color: "#9ca3af" },
+          grid: { color: "rgba(255,255,255,0.05)" }
+        }
       }
-    }
     }
   });
 }
@@ -196,9 +221,49 @@ function drawScatterPlot(dataset, region) {
     data: {
       datasets: [{
         label: "Affordability vs EV Adoption",
-        data
+        data,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        backgroundColor: "#22c55e"
       }]
+    },
+    options: {
+  responsive: true,
+  maintainAspectRatio: false,
+
+  plugins: {
+    legend: {
+      labels: {
+        color: "#e5e7eb",
+        font: {
+          size: 12,
+          weight: "600"
+        }
+      }
     }
+  },
+
+  scales: {
+    x: {
+      title: {
+        display: true,
+        text: "Fuel Affordability Index",
+        color: "#9ca3af"
+      },
+      ticks: { color: "#9ca3af" },
+      grid: { color: "rgba(255,255,255,0.05)" }
+    },
+    y: {
+      title: {
+        display: true,
+        text: "EV Adoption (%)",
+        color: "#9ca3af"
+      },
+      ticks: { color: "#9ca3af" },
+      grid: { color: "rgba(255,255,255,0.05)" }
+    }
+  }
+}
   });
 }
 
@@ -207,7 +272,7 @@ function drawHistogram(dataset, region) {
   destroyIfExists("histChart");
 
   const values = filterData(dataset, region)
-    .map(r => safeNum(r[selectedMetric])) // 🔥 NOW DYNAMIC
+    .map(r => safeNum(r[selectedMetric]))
     .filter(v => v !== null);
 
   if (!values.length) return showNoData("histChart");
@@ -224,16 +289,70 @@ function drawHistogram(dataset, region) {
     counts[i]++;
   });
 
+  const labels = counts.map((_, i) => {
+    const start = (min + step * i).toFixed(2);
+    const end = (min + step * (i + 1)).toFixed(2);
+    return `${start} - ${end}`; // 🔥 REALISTIC LABELS
+  });
+
   const ctx = document.getElementById("histChart");
 
   chinoChartInstances["histChart"] = new Chart(ctx, {
     type: "bar",
     data: {
-      labels: counts.map((_, i) => `Bin ${i + 1}`),
+      labels,
       datasets: [{
         label: getMetricLabel(selectedMetric),
-        data: counts
+        data: counts,
+        borderRadius: 6,
+        backgroundColor: "#f59e0b",
+        hoverBackgroundColor: "#fbbf24" // 🔥 hover color
       }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+
+      interaction: {
+        mode: "index",
+        intersect: false
+      },
+
+      plugins: {
+        legend: {
+          labels: {
+            color: "#e5e7eb",
+            font: {
+              size: 12,
+              weight: "600"
+            }
+          }
+        },
+
+        tooltip: {
+          backgroundColor: "#111",
+          titleColor: "#fff",
+          bodyColor: "#fff",
+          borderColor: "#333",
+          borderWidth: 1,
+          callbacks: {
+            label: function(context) {
+              return `Count: ${context.raw}`;
+            }
+          }
+        }
+      },
+
+      scales: {
+        x: {
+          ticks: { color: "#9ca3af" },
+          grid: { color: "rgba(255,255,255,0.05)" }
+        },
+        y: {
+          ticks: { color: "#9ca3af" },
+          grid: { color: "rgba(255,255,255,0.05)" }
+        }
+      }
     }
   });
 }
