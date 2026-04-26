@@ -3,7 +3,8 @@
 
 let allCountries = [];
 let csvData = [];
-let selectedRegion = null;
+let selectedCountries = [];
+let currentRegionFilter = 'ALL';
 let currentMetric = 'gasoline_usd_per_liter';
 
 function mean(data) {
@@ -303,28 +304,159 @@ function linearRegression(x, y) {
     };
 }
 
-function displayCountriesList(countries) {
-    const listDiv = document.getElementById('countryList');
-    listDiv.innerHTML = '';
+function getCountriesForCurrentRegion() {
+    if (currentRegionFilter === 'ALL') {
+        return allCountries;
+    }
 
-    const allButton = document.createElement('button');
-    allButton.textContent = 'All Regions';
-    allButton.className = 'country-btn';
-    allButton.onclick = () => selectCountry('All Regions');
-    listDiv.appendChild(allButton);
-    
-    countries.forEach(country => {
-        const btn = document.createElement('button');
-        btn.textContent = country;
-        btn.className = 'country-btn';
-        btn.onclick = () => selectCountry(country);
-        listDiv.appendChild(btn);
+    return allCountries.filter(country => {
+        const record = csvData.find(row => row.country === country);
+        return record && record.sub_region === currentRegionFilter;
     });
 }
 
-function selectCountry(selectedRegionName) {
-    selectedRegion = selectedRegionName;
+function renderCountryList() {
+    const regionCountries = getCountriesForCurrentRegion();
+    selectedCountries = [...regionCountries];
+}
+
+function populateRegionSelect() {
+    const regionSelect = document.getElementById('cjRegionSelect');
+    if (!regionSelect) return;
+
+    const regions = [...new Set(csvData.map(record => record.sub_region).filter(Boolean))].sort();
+    regionSelect.innerHTML = '<option value="ALL">All Countries</option>' + regions.map(region => `<option value="${region}">${region}</option>`).join('');
+    regionSelect.value = currentRegionFilter;
+}
+
+function onCjRegionChange() {
+    const regionSelect = document.getElementById('cjRegionSelect');
+    currentRegionFilter = regionSelect ? regionSelect.value : 'ALL';
+    renderCountryList();
     updateMetric();
+}
+
+function openCountryFilterModal() {
+    const countryModal = document.getElementById('countryFilterModal');
+    const countryModalTitle = document.getElementById('countryModalTitle');
+    const countryModalBody = document.getElementById('countryModalBody');
+
+    if (!countryModal || !countryModalTitle || !countryModalBody) {
+        console.error("Country filter modal elements not found! Check your HTML IDs.");
+        return;
+    }
+
+    const countries = getCountriesForCurrentRegion();
+
+    const checkboxMarkup = countries.map(country => {
+        const checked = selectedCountries.includes(country) ? 'checked' : '';
+        return `
+            <label class="cf-country-item">
+                <input type="checkbox" 
+                       name="cfCountryCheckbox" 
+                       value="${country}" 
+                       ${checked}>
+                <span class="cf-country-label">${country}</span>
+            </label>`;
+    }).join('');
+
+    countryModalTitle.innerHTML = `
+        <div class="cf-modal-header">
+            <h2 class="cf-modal-title">Filter Countries</h2>
+            <p class="cf-modal-subtitle">Select countries to compare statistics</p>
+        </div>
+    `;
+
+    countryModalBody.innerHTML = `
+        <div class="cf-country-filter-body">
+            <div class="cf-search-wrapper">
+                <input 
+                    type="text" 
+                    placeholder="Search country..." 
+                    id="cfCountrySearchInput"
+                    oninput="filterCountryList()"
+                    class="cf-search-input"
+                >
+            </div>
+
+            <div class="cf-country-list" id="cfCountryList">
+                ${checkboxMarkup || '<div class="cf-empty-state">No countries found</div>'}
+            </div>
+
+            <div class="cf-modal-footer">
+                <button type="button" class="cf-btn cf-btn-secondary" id="cfClearAllBtn">Clear All</button>
+                <div class="cf-footer-actions">
+                    <button type="button" class="cf-btn cf-btn-ghost" id="cfCancelBtn">Cancel</button>
+                    <button type="button" class="cf-btn cf-btn-primary" id="cfApplyBtn">Apply Filters</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    countryModal.classList.remove('hidden');
+    countryModal.classList.add('show');
+
+    // Attach buttons safely after DOM update
+    setTimeout(() => {
+        const clearBtn = document.getElementById('cfClearAllBtn');
+        const cancelBtn = document.getElementById('cfCancelBtn');
+        const applyBtn = document.getElementById('cfApplyBtn');
+        const searchInput = document.getElementById('cfCountrySearchInput');
+
+        if (clearBtn) clearBtn.addEventListener('click', deselectAllCountries);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeCountryFilterModal);
+        if (applyBtn) applyBtn.addEventListener('click', applyCountryFilter);
+        if (searchInput) searchInput.focus();
+    }, 80);
+}
+
+function closeCountryFilterModal() {
+    const countryModal = document.getElementById('countryFilterModal');
+    if (countryModal) {
+        countryModal.classList.remove('show');
+        countryModal.classList.add('hidden');
+    }
+}
+
+function clearStatsDisplay(message = '-') {
+    document.getElementById('selectedCountry').textContent = message;
+    document.getElementById('mean').textContent = '-';
+    document.getElementById('median').textContent = '-';
+    document.getElementById('stddev').textContent = '-';
+    document.getElementById('variance').textContent = '-';
+    document.getElementById('mode').textContent = '-';
+    document.getElementById('pearson').textContent = '-';
+    document.getElementById('regression').textContent = '-';
+    document.getElementById('dataCount').textContent = '0';
+}
+
+function filterCountryList() {
+    const searchTerm = document.getElementById('cfCountrySearchInput').value.toLowerCase().trim();
+    const items = document.querySelectorAll('.cf-country-item');
+
+    items.forEach(item => {
+        const countryName = item.querySelector('.cf-country-label').textContent.toLowerCase();
+        if (countryName.includes(searchTerm)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+function applyCountryFilter() {
+    const checkedCountries = [...document.querySelectorAll('input[name="cfCountryCheckbox"]:checked')]
+        .map(input => input.value);
+
+    selectedCountries = checkedCountries;
+    updateMetric();
+    closeCountryFilterModal();
+}
+
+function deselectAllCountries() {
+    selectedCountries = [];
+    clearStatsDisplay();
+    closeCountryFilterModal();
 }
 
 function getRegressionExplanation(regression) {
@@ -359,17 +491,18 @@ function getRegressionExplanation(regression) {
 }
 
 function updateMetric() {
-    currentMetric = document.getElementById('metricSelect').value;
+    currentMetric = document.getElementById('cjMetricSelect').value;
     
-    if (!selectedRegion) return;
+    if (selectedCountries.length < 2) {
+        clearStatsDisplay('Select at least 2 countries to show statistics');
+        return;
+    }
     
-    // Get all countries in the selected region, or the full dataset for All Regions
-    const regionRecords = selectedRegion === 'All Regions'
-        ? csvData
-        : csvData.filter(record => record.sub_region === selectedRegion);
+    // Get only the selected countries
+    const regionRecords = csvData.filter(record => selectedCountries.includes(record.country));
     
     if (regionRecords.length === 0) {
-        alert('No data found for ' + selectedRegion);
+        alert('No data found for the selected countries.');
         return;
     }
     
@@ -379,7 +512,7 @@ function updateMetric() {
         .filter(x => !isNaN(x));
     
     if (metricValues.length === 0) {
-        alert('No data for this metric in ' + selectedRegion);
+        alert('No data for this metric in the selected countries.');
         return;
     }
     
@@ -402,11 +535,12 @@ function updateMetric() {
     const overallVariance = variance(csvData.map(record => parseFloat(record[currentMetric])).filter(x => !isNaN(x)));
     
     // Display results for entire region
-    const metricLabel = document.getElementById('metricSelect').options[
-        document.getElementById('metricSelect').selectedIndex
+    const metricSelect = document.getElementById('cjMetricSelect');
+    const metricLabel = metricSelect.options[
+        metricSelect.selectedIndex
     ].text;
     
-    document.getElementById('selectedCountry').textContent = selectedRegion + ' - ' + metricLabel;
+    document.getElementById('selectedCountry').textContent = selectedCountries.join(', ') + ' - ' + metricLabel;
     document.getElementById('mean').textContent = formatTwoDecimals(mean(metricValues));
     document.getElementById('median').textContent = formatTwoDecimals(median(metricValues));
     document.getElementById('stddev').textContent = formatTwoDecimals(stdDev(metricValues));
@@ -429,20 +563,15 @@ function loadCountries() {
     // Use embedded data instead of fetching
     csvData = embeddedDataset;
     
-    // Get unique regions (sub_region)
-    allCountries = [...new Set(csvData.map(record => record.sub_region))].sort();
+    // Get unique countries from the dataset
+    allCountries = [...new Set(csvData.map(record => record.country))].sort();
+    currentRegionFilter = 'ALL';
     
-    // Display all regions
-    displayCountriesList(allCountries);
+    // Display all countries
+    populateRegionSelect();
+    selectedCountries = [...getCountriesForCurrentRegion()];
     
-    // Set up search by region
-    document.getElementById('countrySearch').addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-        const filtered = allCountries.filter(region => 
-            region.toLowerCase().includes(searchTerm)
-        );
-        displayCountriesList(filtered);
-    });
+    updateMetric();
 }
 
 // Load countries when page is ready
