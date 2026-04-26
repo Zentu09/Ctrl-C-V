@@ -337,43 +337,85 @@ function onCjRegionChange() {
 }
 
 function openCountryFilterModal() {
-    const modal = document.getElementById('modal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
+    const countryModal = document.getElementById('countryFilterModal');
+    const countryModalTitle = document.getElementById('countryModalTitle');
+    const countryModalBody = document.getElementById('countryModalBody');
 
-    if (!modal || !modalTitle || !modalBody) return;
+    if (!countryModal || !countryModalTitle || !countryModalBody) {
+        console.error("Country filter modal elements not found! Check your HTML IDs.");
+        return;
+    }
 
-    const checkboxMarkup = getCountriesForCurrentRegion().map(country => {
+    const countries = getCountriesForCurrentRegion();
+
+    const checkboxMarkup = countries.map(country => {
         const checked = selectedCountries.includes(country) ? 'checked' : '';
         return `
-            <label style="display:block; margin:6px 0; font-size:0.95rem;">
-                <input type="checkbox" name="cjCountryFilter" value="${country}" ${checked}> ${country}
+            <label class="cf-country-item">
+                <input type="checkbox" 
+                       name="cfCountryCheckbox" 
+                       value="${country}" 
+                       ${checked}>
+                <span class="cf-country-label">${country}</span>
             </label>`;
     }).join('');
 
-    modalTitle.innerHTML = '<h2 style="margin:0 0 15px 0;">Filter Countries</h2>';
-    modalBody.innerHTML = `
-        <p><strong>Select any countries you want to compare</strong></p>
-        <div style="max-height:260px; overflow-y:auto; border:1px solid #ddd; padding:12px; border-radius:6px; background:#f9f9f9; min-height:80px;">
-            ${checkboxMarkup || '<em>No countries found</em>'}
+    countryModalTitle.innerHTML = `
+        <div class="cf-modal-header">
+            <h2 class="cf-modal-title">Filter Countries</h2>
+            <p class="cf-modal-subtitle">Select countries to compare statistics</p>
         </div>
-        <div class="cj-filter-actions">
-            <div class="cj-filter-actions-left">
-                <button type="button" class="cj-filter-action-btn secondary" onclick="deselectAllCountries()">Deselect All</button>
+    `;
+
+    countryModalBody.innerHTML = `
+        <div class="cf-country-filter-body">
+            <div class="cf-search-wrapper">
+                <input 
+                    type="text" 
+                    placeholder="Search country..." 
+                    id="cfCountrySearchInput"
+                    oninput="filterCountryList()"
+                    class="cf-search-input"
+                >
             </div>
-            <div class="cj-filter-actions-right">
-                <button type="button" class="cj-filter-action-btn primary" onclick="applyCountryFilter()">Apply</button>
-                <button type="button" class="cj-filter-action-btn neutral" onclick="closeCountryFilterModal()">Cancel</button>
+
+            <div class="cf-country-list" id="cfCountryList">
+                ${checkboxMarkup || '<div class="cf-empty-state">No countries found</div>'}
+            </div>
+
+            <div class="cf-modal-footer">
+                <button type="button" class="cf-btn cf-btn-secondary" id="cfClearAllBtn">Clear All</button>
+                <div class="cf-footer-actions">
+                    <button type="button" class="cf-btn cf-btn-ghost" id="cfCancelBtn">Cancel</button>
+                    <button type="button" class="cf-btn cf-btn-primary" id="cfApplyBtn">Apply Filters</button>
+                </div>
             </div>
         </div>
     `;
 
-    modal.classList.remove('hidden');
+    countryModal.classList.remove('hidden');
+    countryModal.classList.add('show');
+
+    // Attach buttons safely after DOM update
+    setTimeout(() => {
+        const clearBtn = document.getElementById('cfClearAllBtn');
+        const cancelBtn = document.getElementById('cfCancelBtn');
+        const applyBtn = document.getElementById('cfApplyBtn');
+        const searchInput = document.getElementById('cfCountrySearchInput');
+
+        if (clearBtn) clearBtn.addEventListener('click', deselectAllCountries);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeCountryFilterModal);
+        if (applyBtn) applyBtn.addEventListener('click', applyCountryFilter);
+        if (searchInput) searchInput.focus();
+    }, 80);
 }
 
 function closeCountryFilterModal() {
-    const modal = document.getElementById('modal');
-    if (modal) modal.classList.add('hidden');
+    const countryModal = document.getElementById('countryFilterModal');
+    if (countryModal) {
+        countryModal.classList.remove('show');
+        countryModal.classList.add('hidden');
+    }
 }
 
 function clearStatsDisplay(message = '-') {
@@ -388,8 +430,23 @@ function clearStatsDisplay(message = '-') {
     document.getElementById('dataCount').textContent = '0';
 }
 
+function filterCountryList() {
+    const searchTerm = document.getElementById('cfCountrySearchInput').value.toLowerCase().trim();
+    const items = document.querySelectorAll('.cf-country-item');
+
+    items.forEach(item => {
+        const countryName = item.querySelector('.cf-country-label').textContent.toLowerCase();
+        if (countryName.includes(searchTerm)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
 function applyCountryFilter() {
-    const checkedCountries = [...document.querySelectorAll('input[name="cjCountryFilter"]:checked')].map(input => input.value);
+    const checkedCountries = [...document.querySelectorAll('input[name="cfCountryCheckbox"]:checked')]
+        .map(input => input.value);
 
     selectedCountries = checkedCountries;
     updateMetric();

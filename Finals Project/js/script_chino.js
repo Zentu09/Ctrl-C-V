@@ -527,7 +527,7 @@ function renderSmartInsight(dataset, region) {
   if (selectedMetric === "gasoline_usd_per_liter") {
     message = avg > 1.5
       ? "Fuel prices in this region are relatively high, which may impact daily expenses."
-      : "Fuel prices are relatively affordable in this region.";
+      : "";
   }
 
   else if (selectedMetric === "ev_adoption_pct") {
