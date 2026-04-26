@@ -52,7 +52,8 @@ function mode(data) {
         }
     }
     
-    return modes.length === Object.keys(frequency).length ? 'No mode' : modes.join(', ');
+    const hasZeroMode = modes.some(value => Number(value) === 0);
+    return modes.length === Object.keys(frequency).length || hasZeroMode ? 'No mode' : modes.join(', ');
 }
 
 function formatTwoDecimals(value) {
