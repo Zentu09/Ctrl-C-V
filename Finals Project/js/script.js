@@ -286,11 +286,13 @@ function renderTable(data) {
 
         // INFO BUTTON
         const infoBtn = document.createElement("button");
+        infoBtn.classList.add("info-btn");
         infoBtn.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
         infoBtn.addEventListener("click", () => openModal(row));
 
         // MARK BUTTON
         const markBtn = document.createElement("button");
+        markBtn.classList.add("mark-btn");
         markBtn.innerHTML = '<i class="fa-solid fa-marker"></i>';
         markBtn.classList.add("mark-btn");
 
@@ -348,9 +350,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const targetElement = document.getElementById(targetId);
 
             if (targetElement) {
-                container.scrollTo({
-                    top: targetElement.offsetTop,
-                    behavior: 'smooth'
+                targetElement.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
                 });
             }
         });
