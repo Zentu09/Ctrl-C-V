@@ -359,7 +359,7 @@ function getRegressionExplanation(regression) {
 }
 
 function updateMetric() {
-    currentMetric = document.getElementById('metricSelect').value;
+    currentMetric = document.getElementById('cjMetricSelect').value;
     
     if (!selectedRegion) return;
     
@@ -402,8 +402,9 @@ function updateMetric() {
     const overallVariance = variance(csvData.map(record => parseFloat(record[currentMetric])).filter(x => !isNaN(x)));
     
     // Display results for entire region
-    const metricLabel = document.getElementById('metricSelect').options[
-        document.getElementById('metricSelect').selectedIndex
+    const metricSelect = document.getElementById('cjMetricSelect');
+    const metricLabel = metricSelect.options[
+        metricSelect.selectedIndex
     ].text;
     
     document.getElementById('selectedCountry').textContent = selectedRegion + ' - ' + metricLabel;
