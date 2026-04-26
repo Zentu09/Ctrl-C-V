@@ -1,61 +1,27 @@
-// ===============================
-//        EMBEDDED CSV DATA
-// ===============================
-// Note: CSV_FILE is no longer used, data is embedded in data.js
-
-// ===============================
-//           DATA CLASS
-// ===============================
-class FuelData {
-    constructor(data) {
-        this.raw = data;
-
-        this.country = data.country;
-        this.gasoline = data.gasoline_usd_per_liter;
-        this.diesel = data.diesel_usd_per_liter;
-        this.lpg = data.lpg_usd_per_kg;
-        this.index = data.fuel_affordability_index;
-        this.oil_import = data.oil_import_dependency_pct;
-        this.subsidy = data.active_subsidy;
-        this.date = data.price_date;
-    }
-
-    getTableRow() {
-        return [
-            this.country,
-            this.gasoline,
-            this.diesel,
-            this.lpg,
-            this.index,
-            this.date
-        ];
-    }
-}
-
-// ===============================
-//         GLOBAL STATE
-// ===============================
+// ====================== GLOBAL STATE ======================
 const visibleColumns = [
-    "Country",
-    "Gasoline USD per Liter",
+    "Country", 
+    "Gasoline USD per Liter", 
     "Diesel USD per Liter",
-    "LPG USD per Liter",
-    "Affordability Index",
+    "LPG USD per Liter", 
+    "Affordability Index", 
     "Price Date"
 ];
 
 let dataset = [];
 let filteredData = [];
-let sortAsc = true;
+let selectedRegions = new Set();
+let selectedSubsidy = "all";
+let lastSortField = "country";
+let lastSortDirection = "asc";
 
-// ===============================
-//           MODAL
-// ===============================
+// Modal elements
 const modal = document.getElementById("modal");
 const modalTitle = document.getElementById("modalTitle");
 const modalBody = document.getElementById("modalBody");
-const closeModal = document.getElementById("closeModal");
+const closeModalBtn = document.getElementById("closeModal");
 
+// ====================== VIEW DETAILS MODAL (UNCHANGED - Your Original) ======================
 function openModal(data) {
     modalTitle.innerHTML = `<h2>${data.country}</h2>`;
     modalBody.innerHTML = buildModalFields(data);
@@ -66,18 +32,16 @@ function closeModalFunc() {
     modal.classList.add("hidden");
 }
 
-closeModal.addEventListener("click", closeModalFunc);
+if (closeModalBtn) {
+    closeModalBtn.addEventListener("click", closeModalFunc);
+}
 
 window.addEventListener("click", (e) => {
     if (e.target === modal) closeModalFunc();
 });
 
-// ===============================
-//        FIELD BUILDER
-// ===============================
 function buildModalFields(data) {
     let html = "";
-
     Object.entries(data.raw).forEach(([key, value]) => {
         html += `
             <div class="field">
@@ -86,7 +50,6 @@ function buildModalFields(data) {
             </div>
         `;
     });
-
     return html;
 }
 
@@ -94,203 +57,298 @@ function formatLabel(key) {
     return key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
-// ===============================
-//        KPI COLOR SYSTEM
-// ===============================
 function formatValue(value, key) {
-    if (value === null || value === undefined) return "";
+    if (value === null || value === undefined) return "—";
 
-    const str = String(value).trim().toLowerCase();
+    const str = String(value).trim().toUpperCase();
     const num = Number(value);
 
-    // BOOLEAN (subsidy)
-    if (str === "true") return `<span class="positive">Active</span>`;
-    if (str === "false") return `<span class="negative">Inactive</span>`;
+    // Subsidy - now checks the correct column name
+    if (key === "fuel_subsidy_active" || key.includes("subsidy")) {
+        if (str === "TRUE") return `<span class="positive">Active</span>`;
+        if (str === "FALSE") return `<span class="negative">Inactive</span>`;
+    }
 
-    // AFFORDABILITY INDEX
+    // Affordability Index
     if (key === "fuel_affordability_index") {
         if (!isNaN(num)) {
-            if (num >= 6) return `<span class="positive">${value}</span>`;
-            else return `<span class="negative">${value}</span>`;
+            return num >= 6 ? `<span class="positive">${value}</span>` : `<span class="negative">${value}</span>`;
         }
     }
 
-    // OIL IMPORT DEPENDENCY
+    // Oil Import Dependency
     if (key === "oil_import_dependency_pct") {
         if (!isNaN(num)) {
-            if (num <= 50) return `<span class="positive">${value}</span>`;
-            else return `<span class="negative">${value}</span>`;
+            return num <= 50 ? `<span class="positive">${value}</span>` : `<span class="negative">${value}</span>`;
         }
     }
 
     return value;
 }
 
-// ===============================
-//        LOAD CSV DATA
-// ===============================
-function loadDataset() {
-    try {
-        // Use embedded data instead of fetching
-        dataset = embeddedDataset.map(row => new FuelData(row));
-
-        filteredData = [...dataset];
-        renderTable(filteredData);
-
-        // Make data globally available for charts
-        window.datasetRows = dataset;
-        window.globalData = dataset;
+// ====================== ADVANCED FILTER MODAL (Region Selection Fixed) ======================
+function openFilterModal() {
+    let html = `
+        <h2 style="margin:0 0 15px 0;">Filter & Sort Options</h2>
         
-        // Trigger chart initialization if available
-        if (typeof onDataReady === "function") {
-            onDataReady(dataset);
-        }
+        <p><strong>Regions (leave all unchecked to show ALL countries)</strong></p>
+        <div id="regionCheckboxes" style="max-height:200px; overflow-y:auto; border:1px solid #ddd; padding:12px; border-radius:6px; background:#f9f9f9; min-height:80px;">
+            <em>Loading regions...</em>
+        </div>
 
-    } catch (err) {
-        console.error("CSV load failed:", err);
+        <p style="margin-top:15px;"><strong>Subsidy Status</strong></p>
+        <label><input type="radio" name="subsidyFilter" value="all" ${selectedSubsidy === "all" ? "checked" : ""}> All Countries</label><br>
+        <label><input type="radio" name="subsidyFilter" value="active" ${selectedSubsidy === "active" ? "checked" : ""}> Active Subsidy Only</label><br>
+        <label><input type="radio" name="subsidyFilter" value="inactive" ${selectedSubsidy === "inactive" ? "checked" : ""}> Inactive Subsidy Only</label>
+
+        <p style="margin-top:15px;"><strong>Sort By</strong></p>
+        <select id="sortField" style="width:100%; padding:8px; margin-bottom:10px;">
+            <option value="country" ${lastSortField === "country" ? "selected" : ""}>Country Name</option>
+            <option value="gasoline" ${lastSortField === "gasoline" ? "selected" : ""}>Gasoline Price</option>
+            <option value="diesel" ${lastSortField === "diesel" ? "selected" : ""}>Diesel Price</option>
+            <option value="lpg" ${lastSortField === "lpg" ? "selected" : ""}>LPG Price</option>
+            <option value="index" ${lastSortField === "index" ? "selected" : ""}>Affordability Index</option>
+            <option value="oil_import" ${lastSortField === "oil_import" ? "selected" : ""}>Oil Import Dependency %</option>
+        </select>
+        <label><input type="radio" name="sortDirection" value="asc" ${lastSortDirection === "asc" ? "checked" : ""}> Ascending</label><br>
+        <label><input type="radio" name="sortDirection" value="desc" ${lastSortDirection === "desc" ? "checked" : ""}> Descending</label>
+
+        <div style="text-align:right; margin-top:25px;">
+            <button onclick="applyAdvancedFilter()" style="padding:10px 18px; background:#254fb0; color:white; border:none; border-radius:6px;">Apply</button>
+            <button onclick="closeModalFunc()" style="padding:10px 18px; margin-left:8px; background:#ddd;">Cancel</button>
+        </div>
+    `;
+
+    modalTitle.innerHTML = html;
+    modalBody.innerHTML = "";
+    modal.classList.remove("hidden");
+
+    // Populate regions AFTER modal is shown
+    setTimeout(populateRegions, 50);
+}
+
+
+function populateRegions() {
+    if (!dataset || dataset.length === 0) {
+        document.getElementById("regionCheckboxes").innerHTML = "<em>No data loaded yet...</em>";
+        return;
+    }
+
+    const regions = [...new Set(dataset.map(item => {
+        // Try multiple possible column names
+        return item.raw.sub_region || 
+               item.raw.region || 
+               item.raw.Region || 
+               item.raw.Sub_Region || 
+               "Unknown";
+    }))].filter(r => r && r !== "Unknown").sort();
+
+    let chkHtml = '';
+    regions.forEach(reg => {
+        const checked = selectedRegions.has(reg) ? "checked" : "";
+        chkHtml += `
+            <label style="display:block; margin:6px 0; font-size:0.95rem;">
+                <input type="checkbox" value="${reg}" ${checked} onchange="toggleRegionFilter(this)"> ${reg}
+            </label>`;
+    });
+
+    const container = document.getElementById("regionCheckboxes");
+    if (container) {
+        container.innerHTML = chkHtml || "<em>No regions found in data</em>";
     }
 }
 
-// ===============================
-//         RENDER TABLE
-// ===============================
+function toggleRegionFilter(checkbox) {
+    if (checkbox.checked) {
+        selectedRegions.add(checkbox.value);
+    } else {
+        selectedRegions.delete(checkbox.value);
+    }
+}
+
+// ====================== APPLY FILTER ======================
+function applyAdvancedFilter() {
+    if (!dataset || dataset.length === 0) return;
+
+    // Save current state
+    const subsidyRadio = document.querySelector('input[name="subsidyFilter"]:checked');
+    if (subsidyRadio) selectedSubsidy = subsidyRadio.value;
+
+    lastSortField = document.getElementById("sortField").value || "country";
+    const dirRadio = document.querySelector('input[name="sortDirection"]:checked');
+    if (dirRadio) lastSortDirection = dirRadio.value;
+
+    let data = [...dataset];
+
+    // Region filter - FIXED
+    if (selectedRegions.size > 0) {
+        data = data.filter(row => {
+            const region = row.raw.sub_region || 
+                          row.raw.region || 
+                          row.raw.Region || 
+                          row.raw.Sub_Region || 
+                          "Unknown";
+            return selectedRegions.has(region);
+        });
+    }
+
+    // Subsidy filter
+    if (selectedSubsidy !== "all") {
+        const wantActive = selectedSubsidy === "active";
+        data = data.filter(row => {
+            const subValue = String(row.raw.fuel_subsidy_active || "").trim().toUpperCase();   // ← Fixed
+            const isActive = subValue === "TRUE";
+            return wantActive ? isActive : !isActive;
+        });
+    }
+
+    // Sorting
+    const field = lastSortField;
+    const direction = lastSortDirection;
+
+    data.sort((a, b) => {
+        let va = 0, vb = 0;
+        switch(field) {
+            case "country":
+                va = (a.country || "").toString().toLowerCase();
+                vb = (b.country || "").toString().toLowerCase();
+                return direction === "asc" ? va.localeCompare(vb) : vb.localeCompare(va);
+            case "gasoline": va = parseFloat(a.gasoline)||0; vb = parseFloat(b.gasoline)||0; break;
+            case "diesel":   va = parseFloat(a.diesel)||0;   vb = parseFloat(b.diesel)||0;   break;
+            case "lpg":      va = parseFloat(a.lpg)||0;      vb = parseFloat(b.lpg)||0;      break;
+            case "index":    va = parseFloat(a.index)||0;    vb = parseFloat(b.index)||0;    break;
+            case "oil_import": va = parseFloat(a.oil_import)||0; vb = parseFloat(b.oil_import)||0; break;
+        }
+        return direction === "asc" ? va - vb : vb - va;
+    });
+
+    filteredData = data;
+    renderTable(filteredData);
+    closeModalFunc();
+}
+
+// ====================== RENDER TABLE ======================
 function renderTable(data) {
-    const tableHead = document.querySelector("#dataTable thead");
-    const tableBody = document.querySelector("#dataTable tbody");
+    const thead = document.querySelector("#dataTable thead");
+    const tbody = document.querySelector("#dataTable tbody");
 
-    tableHead.innerHTML = "";
-    tableBody.innerHTML = "";
+    if (!thead || !tbody) return;
 
-    if (!data.length) return;
+    thead.innerHTML = "";
+    tbody.innerHTML = "";
 
-    // HEADER
+    if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="padding:80px;text-align:center;color:#666;">No data found</td></tr>`;
+        return;
+    }
+
+    // Header
     const headerRow = document.createElement("tr");
-
     visibleColumns.forEach(col => {
         const th = document.createElement("th");
         th.textContent = col;
         headerRow.appendChild(th);
     });
+    const detailTh = document.createElement("th");
+    detailTh.textContent = "Details";
+    headerRow.appendChild(detailTh);
+    thead.appendChild(headerRow);
 
-    const th = document.createElement("th");
-    th.textContent = "Details";
-    headerRow.appendChild(th);
-
-    tableHead.appendChild(headerRow);
-
-    // ROWS
+    // Rows
     data.forEach(row => {
         const tr = document.createElement("tr");
 
-        row.getTableRow().forEach((cell, i) => {
+        row.getTableRow().forEach(cell => {
             const td = document.createElement("td");
-            td.innerHTML = formatValue(cell, Object.keys(row.raw)[i]);
+            td.textContent = (cell != null) ? cell : '';
             tr.appendChild(td);
         });
 
-        const td = document.createElement("td");
+        const actionTd = document.createElement("td");
         const btn = document.createElement("button");
         btn.textContent = "View";
-
         btn.addEventListener("click", () => openModal(row));
+        actionTd.appendChild(btn);
+        tr.appendChild(actionTd);
 
-        td.appendChild(btn);
-        tr.appendChild(td);
-
-        tableBody.appendChild(tr);
+        tbody.appendChild(tr);
     });
 }
 
-// ===============================
-//           SEARCH
-// ===============================
-document.getElementById("searchInput").addEventListener("input", function () {
-    const query = this.value.toLowerCase();
-
-    filteredData = dataset.filter(row =>
-        Object.values(row.raw).some(val =>
-            String(val).toLowerCase().includes(query)
-        )
-    );
-
-    renderTable(filteredData);
-});
-
-// ===============================
-//            SORT
-// ===============================
-function sortTable() {
-    filteredData.sort((a, b) =>
-        sortAsc
-            ? a.country.localeCompare(b.country)
-            : b.country.localeCompare(a.country)
-    );
-
-    sortAsc = !sortAsc;
-    renderTable(filteredData);
+// ====================== SEARCH ======================
+const searchInput = document.getElementById("searchInput");
+if (searchInput) {
+    searchInput.addEventListener("input", function () {
+        const query = this.value.toLowerCase();
+        filteredData = dataset.filter(row =>
+            Object.values(row.raw || {}).some(val => String(val).toLowerCase().includes(query))
+        );
+        renderTable(filteredData);
+    });
 }
 
-// ===============================
-//            INIT
-// ===============================
-// Load dataset when DOM is ready to ensure chart libraries are loaded
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof embeddedDataset !== 'undefined') {
-        loadDataset();
-    }
-});
-
-// ===============================
-//      SIDEBAR NAVIGATION
-// ===============================
+// ====================== SIDEBAR NAVIGATION (Fixed Smooth Scroll) ======================
 document.addEventListener('DOMContentLoaded', function() {
     const sidebarLinks = document.querySelectorAll('.sidebar-link');
-    
-    // Handle sidebar link clicks
+
     sidebarLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
-            
-            // Remove active class from all links
+
+            // Remove active from all links
             sidebarLinks.forEach(l => l.classList.remove('active'));
-            
-            // Add active class to clicked link
             this.classList.add('active');
-            
-            // Smooth scroll to target section
+
             const targetId = this.getAttribute('data-target');
             const targetElement = document.getElementById(targetId);
-            
+
             if (targetElement) {
-                targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        });
-    });
-    
-    // Update active link on scroll
-    window.addEventListener('scroll', function() {
-        let currentSection = '';
-        
-        sidebarLinks.forEach(link => {
-            const sectionId = link.getAttribute('data-target');
-            const section = document.getElementById(sectionId);
-            
-            if (section) {
-                const sectionTop = section.offsetTop;
-                const sectionHeight = section.offsetHeight;
-                
-                if (window.scrollY >= sectionTop - 100 && window.scrollY < sectionTop + sectionHeight - 100) {
-                    currentSection = sectionId;
-                }
-            }
-        });
-        
-        // Update active state based on scroll position
-        sidebarLinks.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('data-target') === currentSection) {
-                link.classList.add('active');
+                // Smooth scroll with proper offset for fixed header + sidebar
+                const headerOffset = 90; // Increased for safety
+                const elementPosition = targetElement.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.scrollY - headerOffset;
+
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
             }
         });
     });
 });
+
+// ====================== LOAD DATA ======================
+function loadDataset() {
+    if (typeof embeddedDataset === 'undefined' || !embeddedDataset.length) {
+        console.error("embeddedDataset not found!");
+        return;
+    }
+
+    dataset = embeddedDataset.map(row => new FuelData(row));
+    filteredData = [...dataset];
+    renderTable(filteredData);     // Make sure table loads on start
+
+    window.datasetRows = dataset;
+    if (typeof onDataReady === "function") onDataReady(dataset);
+}
+
+class FuelData {
+    constructor(data) {
+        this.raw = data;
+        this.country = data.country;
+        this.gasoline = data.gasoline_usd_per_liter;
+        this.diesel = data.diesel_usd_per_liter;
+        this.lpg = data.lpg_usd_per_kg;
+        this.index = data.fuel_affordability_index;
+        this.oil_import = data.oil_import_dependency_pct;
+        this.subsidy = data.fuel_subsidy_active;  
+        this.date = data.price_date;
+    }
+
+    getTableRow() {
+        return [this.country, this.gasoline, this.diesel, this.lpg, this.index, this.date];
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', loadDataset);

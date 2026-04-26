@@ -22,16 +22,21 @@
 
     <!-- PART NI ART -->
     <div id="section-art" class="main-content"> 
-        <h1>Dataset Viewer</h1>
+       
 
         <div class="controls">
             <input type="text" id="searchInput" placeholder="Filter data...">
-            <button onclick="sortTable()">Sort</button>
+            <button onclick="openFilterModal()">Advanced Filter</button>
         </div>
 
         <div class="layer-tab">
             <div class="tab-con">
-                <table id="dataTable"><thead></thead><tbody></tbody></table>
+                <div class="table-wrapper">
+                    <table id="dataTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
         </div>
         
