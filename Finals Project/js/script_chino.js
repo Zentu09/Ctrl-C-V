@@ -126,7 +126,6 @@ function initCharts(dataset, region) {
   renderSmartInsight(dataset, region);
 }
 
-
 // ── BAR CHART ───────────────────────────────
 function drawBarChart(dataset, region) {
   destroyIfExists("barChart");
@@ -152,8 +151,27 @@ function drawBarChart(dataset, region) {
       }]
     },
     options: {
-      responsive: true,
-      plugins: { legend: { display: false } }
+      plugins: {
+      legend: {
+        labels: {
+          color: "#e5e7eb",
+          font: {
+            size: 12,
+            weight: "600"
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: "#9ca3af" },
+        grid: { color: "rgba(255,255,255,0.05)" }
+      },
+      y: {
+        ticks: { color: "#9ca3af" },
+        grid: { color: "rgba(255,255,255,0.05)" }
+      }
+    }
     }
   });
 }
@@ -250,23 +268,61 @@ function drawPieChart(dataset, region) {
 
   const ctx = document.getElementById("pieChart");
   if (!ctx) return;
-
+  
   chinoChartInstances["pieChart"] = new Chart(ctx, {
     type: "pie",
     data: {
       labels: top.map(r => r.label),
       datasets: [{
-        data: top.map(r => r.value)
+        data: top.map(r => r.value),
+        backgroundColor: [
+          "#3B82F6", // blue
+          "#EF4444", // red
+          "#F59E0B", // orange
+          "#10B981", // green
+          "#6366F1"  // violet (others)
+        ],
+        borderColor: "#0f172a",
+        borderWidth: 2,
+        hoverOffset: 12
       }]
     },
+
+    elements: {
+      arc: {
+        borderWidth: 2
+      }
+    },
+
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
+
       plugins: {
+        legend: {
+          position: "top",
+          labels: {
+            color: "#fff",
+            padding: 15,
+            boxWidth: 15,
+            font: {
+              size: 12,
+              weight: "600"
+            }
+          }
+        },
+
         tooltip: {
+          backgroundColor: "#111",
+          titleColor: "#fff",
+          bodyColor: "#fff",
+          borderColor: "#333",
+          borderWidth: 1,
           callbacks: {
             label: function(context) {
               const value = context.raw;
               const percent = ((value / total) * 100).toFixed(1);
-              return `${context.label}: ${value} (${percent}%)`;
+              return `${context.label}: ${formatNumber(value)} (${percent}%)`;
             }
           }
         }
@@ -335,6 +391,7 @@ function renderInsights(dataset, region) {
     </div>
   `;
 }
+
 function renderSmartInsight(dataset, region) {
   const data = filterData(dataset, region);
 
@@ -344,7 +401,7 @@ function renderSmartInsight(dataset, region) {
 
   if (!values.length) return;
 
-  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  const avg = values.reduce((sum, v) => sum + v.value, 0) / values.length;
 
   let message = "";
 
