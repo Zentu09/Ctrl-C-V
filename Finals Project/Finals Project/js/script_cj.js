@@ -3,7 +3,8 @@
 
 let allCountries = [];
 let csvData = [];
-let selectedRegion = null;
+let selectedCountries = [];
+let currentRegionFilter = 'ALL';
 let currentMetric = 'gasoline_usd_per_liter';
 
 function mean(data) {
@@ -303,28 +304,96 @@ function linearRegression(x, y) {
     };
 }
 
-function displayCountriesList(countries) {
-    const listDiv = document.getElementById('countryList');
-    listDiv.innerHTML = '';
+function getCountriesForCurrentRegion() {
+    if (currentRegionFilter === 'ALL') {
+        return allCountries;
+    }
 
-    const allButton = document.createElement('button');
-    allButton.textContent = 'All Regions';
-    allButton.className = 'country-btn';
-    allButton.onclick = () => selectCountry('All Regions');
-    listDiv.appendChild(allButton);
-    
-    countries.forEach(country => {
-        const btn = document.createElement('button');
-        btn.textContent = country;
-        btn.className = 'country-btn';
-        btn.onclick = () => selectCountry(country);
-        listDiv.appendChild(btn);
+    return allCountries.filter(country => {
+        const record = csvData.find(row => row.country === country);
+        return record && record.sub_region === currentRegionFilter;
     });
 }
 
-function selectCountry(selectedRegionName) {
-    selectedRegion = selectedRegionName;
+function renderCountryList() {
+    const regionCountries = getCountriesForCurrentRegion();
+    selectedCountries = [...regionCountries];
+}
+
+function populateRegionSelect() {
+    const regionSelect = document.getElementById('cjRegionSelect');
+    if (!regionSelect) return;
+
+    const regions = [...new Set(csvData.map(record => record.sub_region).filter(Boolean))].sort();
+    regionSelect.innerHTML = '<option value="ALL">All Countries</option>' + regions.map(region => `<option value="${region}">${region}</option>`).join('');
+    regionSelect.value = currentRegionFilter;
+}
+
+function onCjRegionChange() {
+    const regionSelect = document.getElementById('cjRegionSelect');
+    currentRegionFilter = regionSelect ? regionSelect.value : 'ALL';
+    renderCountryList();
     updateMetric();
+}
+
+function openCountryFilterModal() {
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    if (!modal || !modalTitle || !modalBody) return;
+
+    const checkboxMarkup = getCountriesForCurrentRegion().map(country => {
+        const checked = selectedCountries.includes(country) ? 'checked' : '';
+        return `
+            <label style="display:block; margin:6px 0; font-size:0.95rem;">
+                <input type="checkbox" name="cjCountryFilter" value="${country}" ${checked}> ${country}
+            </label>`;
+    }).join('');
+
+    modalTitle.innerHTML = '<h2 style="margin:0 0 15px 0;">Filter Countries</h2>';
+    modalBody.innerHTML = `
+        <p><strong>Select any countries you want to compare</strong></p>
+        <div style="max-height:260px; overflow-y:auto; border:1px solid #ddd; padding:12px; border-radius:6px; background:#f9f9f9; min-height:80px;">
+            ${checkboxMarkup || '<em>No countries found</em>'}
+        </div>
+        <div class="cj-filter-actions">
+            <div class="cj-filter-actions-left">
+                <button type="button" class="cj-filter-action-btn secondary" onclick="deselectAllCountries()">Deselect All</button>
+            </div>
+            <div class="cj-filter-actions-right">
+                <button type="button" class="cj-filter-action-btn primary" onclick="applyCountryFilter()">Apply</button>
+                <button type="button" class="cj-filter-action-btn neutral" onclick="closeCountryFilterModal()">Cancel</button>
+            </div>
+        </div>
+    `;
+
+    modal.classList.remove('hidden');
+}
+
+function closeCountryFilterModal() {
+    const modal = document.getElementById('modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function clearStatsDisplay(message = '-') {
+    document.getElementById('selectedCountry').textContent = message;
+    document.getElementById('mean').textContent = '-';
+    document.getElementById('median').textContent = '-';
+    document.getElementById('stddev').textContent = '-';
+    document.getElementById('variance').textContent = '-';
+    document.getElementById('mode').textContent = '-';
+    document.getElementById('pearson').textContent = '-';
+    document.getElementById('regression').textContent = '-';
+    document.getElementById('dataCount').textContent = '0';
+}
+
+function applyCountryFilter() {
+    const checkedCountries = [...document.querySelectorAll('input[name="cjCountryFilter"]:checked')].map(input => input.value);
+
+    selectedCountries = checkedCountries;
+    updateMetric();
+    closeCountryFilterModal();
 }
 
 function getRegressionExplanation(regression) {
@@ -361,15 +430,16 @@ function getRegressionExplanation(regression) {
 function updateMetric() {
     currentMetric = document.getElementById('cjMetricSelect').value;
     
-    if (!selectedRegion) return;
+    if (selectedCountries.length < 2) {
+        clearStatsDisplay('Select at least 2 countries to show statistics');
+        return;
+    }
     
-    // Get all countries in the selected region, or the full dataset for All Regions
-    const regionRecords = selectedRegion === 'All Regions'
-        ? csvData
-        : csvData.filter(record => record.sub_region === selectedRegion);
+    // Get only the selected countries
+    const regionRecords = csvData.filter(record => selectedCountries.includes(record.country));
     
     if (regionRecords.length === 0) {
-        alert('No data found for ' + selectedRegion);
+        alert('No data found for the selected countries.');
         return;
     }
     
@@ -379,7 +449,7 @@ function updateMetric() {
         .filter(x => !isNaN(x));
     
     if (metricValues.length === 0) {
-        alert('No data for this metric in ' + selectedRegion);
+        alert('No data for this metric in the selected countries.');
         return;
     }
     
@@ -407,7 +477,7 @@ function updateMetric() {
         metricSelect.selectedIndex
     ].text;
     
-    document.getElementById('selectedCountry').textContent = selectedRegion + ' - ' + metricLabel;
+    document.getElementById('selectedCountry').textContent = selectedCountries.join(', ') + ' - ' + metricLabel;
     document.getElementById('mean').textContent = formatTwoDecimals(mean(metricValues));
     document.getElementById('median').textContent = formatTwoDecimals(median(metricValues));
     document.getElementById('stddev').textContent = formatTwoDecimals(stdDev(metricValues));
@@ -430,20 +500,15 @@ function loadCountries() {
     // Use embedded data instead of fetching
     csvData = embeddedDataset;
     
-    // Get unique regions (sub_region)
-    allCountries = [...new Set(csvData.map(record => record.sub_region))].sort();
+    // Get unique countries from the dataset
+    allCountries = [...new Set(csvData.map(record => record.country))].sort();
+    currentRegionFilter = 'ALL';
     
-    // Display all regions
-    displayCountriesList(allCountries);
+    // Display all countries
+    populateRegionSelect();
+    selectedCountries = [...getCountriesForCurrentRegion()];
     
-    // Set up search by region
-    document.getElementById('countrySearch').addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-        const filtered = allCountries.filter(region => 
-            region.toLowerCase().includes(searchTerm)
-        );
-        displayCountriesList(filtered);
-    });
+    updateMetric();
 }
 
 // Load countries when page is ready
