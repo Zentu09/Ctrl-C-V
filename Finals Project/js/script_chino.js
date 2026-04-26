@@ -1,28 +1,27 @@
 // =============================================
-//  script_chino.js — FINAL FIXED VERSION
-//  Compatible with Art + CJ
+//  script_chino.js — FINAL FINAL WORKING VERSION
 // =============================================
 
 let chinoChartInstances = {};
 let uniqueRegions = [];
 
-// ── ENTRY POINT (called by Art's script) ──────
+let selectedMetric = "gasoline_usd_per_liter";
+
+// ── ENTRY POINT ──────────────────────────────
 function onDataReady(dataset) {
   if (!dataset || !dataset.length) {
     console.warn("[chino] No dataset received");
     return;
   }
 
-  // 🔥 Normalize dataset (handle .raw structure)
   const normalized = dataset.map(d => d.raw ? d.raw : d);
-
   window._chinoDataset = normalized;
 
   extractRegions(normalized);
   populateRegionSelector();
 }
 
-// ── REGION HANDLING ───────────────────────────
+// ── REGION HANDLING ──────────────────────────
 function extractRegions(dataset) {
   const regions = new Set();
 
@@ -37,41 +36,57 @@ function populateRegionSelector() {
   const select = document.getElementById("regionSelect");
   if (!select) return;
 
-  select.innerHTML = "";
+  select.innerHTML = `<option value="ALL">All Regions</option>`;
 
-  uniqueRegions.forEach((region, i) => {
+  uniqueRegions.forEach(region => {
     const option = document.createElement("option");
     option.value = region;
     option.textContent = region;
     select.appendChild(option);
-
-    if (i === 0) option.selected = true;
   });
 
-  if (uniqueRegions.length > 0) {
-    window._chinoSelectedRegion = uniqueRegions[0];
-    initCharts(window._chinoDataset, uniqueRegions[0]);
-  }
+  window._chinoSelectedRegion = "ALL";
+  initCharts(window._chinoDataset, "ALL");
 }
 
 function onRegionChange() {
   const region = document.getElementById("regionSelect").value;
-
   window._chinoSelectedRegion = region;
-
-  populateCountrySelector(region);
-
-  selectedCountry = null;
 
   initCharts(window._chinoDataset, region);
 }
 
-// ── CORE FILTER ───────────────────────────────
-function filterData(dataset, region, selectedCountry) {
+// ── METRIC HANDLING ──────────────────────────
+function onMetricChange() {
+  selectedMetric = document.getElementById("metricSelect").value;
+
+  console.log("Selected Metric:", selectedMetric); // DEBUG
+
+  initCharts(window._chinoDataset, window._chinoSelectedRegion);
+}
+
+function getMetricLabel(metric) {
+  const labels = {
+    gasoline_usd_per_liter: "Gasoline (USD/L)",
+    diesel_usd_per_liter: "Diesel (USD/L)",
+    lpg_usd_per_kg: "LPG (USD/kg)",
+    avg_monthly_income_usd: "Avg Monthly Income (USD)",
+    fuel_affordability_index: "Fuel Affordability Index",
+    oil_import_dependency_pct: "Oil Import Dependency (%)",
+    refinery_capacity_kbpd: "Refinery Capacity (KBPD)",
+    ev_adoption_pct: "EV Adoption (%)",
+    subsidy_cost_bn_usd: "Subsidy Cost (Bn USD)",
+    co2_transport_mt: "CO2 Transport (Mt)",
+    gasoline_pct_daily_wage: "Gasoline (% Daily Wage)"
+  };
+
+  return labels[metric] || "Value";
+}
+
+// ── FILTER ───────────────────────────────────
+function filterData(dataset, region) {
   return dataset.filter(row => {
-    const inRegion = row.sub_region === region;
-    const inCountry = selectedCountry ? row.country === selectedCountry : true;
-    return inRegion && inCountry;
+    return region === "ALL" ? true : row.sub_region === region;
   });
 }
 
@@ -92,36 +107,37 @@ function safeNum(v) {
   return isNaN(n) ? null : n;
 }
 
-// ── INIT CHARTS (ONLY VALID ONES) ─────────────
+// ── INIT ─────────────────────────────────────
 function initCharts(dataset, region) {
   drawBarChart(dataset, region);
   drawScatterPlot(dataset, region);
   drawHistogram(dataset, region);
   drawPieChart(dataset, region);
+
+  renderInsights(dataset, region);
 }
 
-// ── BAR CHART ────────────────────────────────
+// ── BAR CHART ───────────────────────────────
 function drawBarChart(dataset, region) {
   destroyIfExists("barChart");
 
-  const rows = filterData(dataset, region, selectedCountry)
+  const rows = filterData(dataset, region)
     .map(r => ({
       label: r.country,
-      value: safeNum(r.gasoline_usd_per_liter)
+      value: safeNum(r[selectedMetric])
     }))
     .filter(r => r.value !== null);
 
   if (!rows.length) return showNoData("barChart");
 
   const ctx = document.getElementById("barChart");
-  if (!ctx) return;
 
   chinoChartInstances["barChart"] = new Chart(ctx, {
     type: "bar",
     data: {
       labels: rows.map(r => r.label),
       datasets: [{
-        label: "Gasoline Price (USD/L)",
+        label: getMetricLabel(selectedMetric),
         data: rows.map(r => r.value)
       }]
     },
@@ -132,11 +148,11 @@ function drawBarChart(dataset, region) {
   });
 }
 
-// ── SCATTER ──────────────────────────────────
+// ── SCATTER ─────────────────────────────────
 function drawScatterPlot(dataset, region) {
   destroyIfExists("scatterChart");
 
-  const data = filterData(dataset, region, selectedCountry)
+  const data = filterData(dataset, region)
     .map(r => ({
       x: safeNum(r.fuel_affordability_index),
       y: safeNum(r.ev_adoption_pct)
@@ -146,7 +162,6 @@ function drawScatterPlot(dataset, region) {
   if (!data.length) return showNoData("scatterChart");
 
   const ctx = document.getElementById("scatterChart");
-  if (!ctx) return;
 
   chinoChartInstances["scatterChart"] = new Chart(ctx, {
     type: "scatter",
@@ -159,12 +174,12 @@ function drawScatterPlot(dataset, region) {
   });
 }
 
-// ── HISTOGRAM ────────────────────────────────
+// ── HISTOGRAM ───────────────────────────────
 function drawHistogram(dataset, region) {
   destroyIfExists("histChart");
 
-  const values = filterData(dataset, region, selectedCountry)
-    .map(r => safeNum(r.oil_import_dependency_pct))
+  const values = filterData(dataset, region)
+    .map(r => safeNum(r[selectedMetric])) // 🔥 NOW DYNAMIC
     .filter(v => v !== null);
 
   if (!values.length) return showNoData("histChart");
@@ -182,35 +197,35 @@ function drawHistogram(dataset, region) {
   });
 
   const ctx = document.getElementById("histChart");
-  if (!ctx) return;
 
   chinoChartInstances["histChart"] = new Chart(ctx, {
     type: "bar",
     data: {
       labels: counts.map((_, i) => `Bin ${i + 1}`),
       datasets: [{
-        label: "Distribution",
+        label: getMetricLabel(selectedMetric),
         data: counts
       }]
     }
   });
 }
 
-// ── PIE ──────────────────────────────────────
+// ── PIE ─────────────────────────────────────
 function drawPieChart(dataset, region) {
   destroyIfExists("pieChart");
 
-  const rows = filterData(dataset, region, selectedCountry)
+  const rows = filterData(dataset, region)
     .map(r => ({
       label: r.country,
-      value: safeNum(r.ev_adoption_pct)
+      value: safeNum(r[selectedMetric]) // 🔥 NOW DYNAMIC
     }))
-    .filter(r => r.value !== null);
+    .filter(r => r.value !== null)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5);
 
   if (!rows.length) return showNoData("pieChart");
 
   const ctx = document.getElementById("pieChart");
-  if (!ctx) return;
 
   chinoChartInstances["pieChart"] = new Chart(ctx, {
     type: "pie",
@@ -223,7 +238,39 @@ function drawPieChart(dataset, region) {
   });
 }
 
-// ── NO DATA FALLBACK ─────────────────────────
+// ── INSIGHTS ────────────────────────────────
+function renderInsights(dataset, region) {
+  const data = filterData(dataset, region);
+
+  const values = data
+    .map(r => safeNum(r[selectedMetric]))
+    .filter(v => v !== null);
+
+  if (!values.length) return;
+
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+
+  document.getElementById("chino-insights").innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Highest</div>
+      <div class="stat-value">${max.toFixed(2)}</div>
+    </div>
+
+    <div class="stat-card alt">
+      <div class="stat-label">Lowest</div>
+      <div class="stat-value">${min.toFixed(2)}</div>
+    </div>
+
+    <div class="stat-card alt-2">
+      <div class="stat-label">Average</div>
+      <div class="stat-value">${avg.toFixed(2)}</div>
+    </div>
+  `;
+}
+
+// ── NO DATA ─────────────────────────────────
 function showNoData(id) {
   const canvas = document.getElementById(id);
   if (!canvas) return;
@@ -236,43 +283,7 @@ function showNoData(id) {
   ctx.fillText("No data available", canvas.width / 2, canvas.height / 2);
 }
 
-let selectedCountry = null;
-function populateCountrySelector(region) {
-  const select = document.getElementById("countrySelect");
-  if (!select) return;
-
-  select.innerHTML = `<option value="">All Countries (Region View)</option>`;
-
-  const countries = window._chinoDataset
-    .filter(r => r.sub_region === region)
-    .map(r => r.country)
-    .sort();
-
-  countries.forEach(country => {
-    const option = document.createElement("option");
-    option.value = country;
-    option.textContent = country;
-    select.appendChild(option);
-  });
-
-  selectedCountry = null;
-}
-
-function onCountryChange() {
-  const country = document.getElementById("countrySelect").value;
-  selectedCountry = country || null;
-
-  initCharts(window._chinoDataset, window._chinoSelectedRegion);
-}
-
-function filterData(dataset, region, selectedCountry) {
-  return dataset.filter(row => {
-    const inRegion = row.sub_region === region;
-    const inCountry = selectedCountry ? row.country === selectedCountry : true;
-    return inRegion && inCountry;
-  });
-}
-
+// ── AUTO INIT ───────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   if (window.globalData) {
     onDataReady(window.globalData);
