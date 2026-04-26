@@ -58,7 +58,7 @@ function onRegionChange() {
 
 // ── METRIC HANDLING ──────────────────────────
 function onMetricChange() {
-  selectedMetric = document.getElementById("metricSelect").value;
+  selectedMetric = document.getElementById("metricSelectChino").value;
 
   console.log("Selected Metric:", selectedMetric); // DEBUG
 
@@ -107,6 +107,14 @@ function safeNum(v) {
   return isNaN(n) ? null : n;
 }
 
+function formatNumber(num) {
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + "M"; // millions
+  if (num >= 1000) return num.toLocaleString(); // 1,000+
+  if (num >= 100) return num.toFixed(0); // no decimals
+  if (num >= 10) return num.toFixed(1); // 1 decimal
+  return num.toFixed(2); // small values
+}
+
 // ── INIT ─────────────────────────────────────
 function initCharts(dataset, region) {
   drawBarChart(dataset, region);
@@ -115,7 +123,9 @@ function initCharts(dataset, region) {
   drawPieChart(dataset, region);
 
   renderInsights(dataset, region);
+  renderSmartInsight(dataset, region);
 }
+
 
 // ── BAR CHART ───────────────────────────────
 function drawBarChart(dataset, region) {
@@ -217,29 +227,115 @@ function drawPieChart(dataset, region) {
   const rows = filterData(dataset, region)
     .map(r => ({
       label: r.country,
-      value: safeNum(r[selectedMetric]) // 🔥 NOW DYNAMIC
+      value: safeNum(r[selectedMetric])
     }))
     .filter(r => r.value !== null)
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 5);
+    .sort((a, b) => b.value - a.value);
 
   if (!rows.length) return showNoData("pieChart");
 
+  const top = rows.slice(0, 4);
+  const others = rows.slice(4);
+
+  const othersTotal = others.reduce((sum, r) => sum + r.value, 0);
+
+  if (others.length) {
+    top.push({
+      label: "Others",
+      value: othersTotal
+    });
+  }
+
+  const total = top.reduce((sum, r) => sum + r.value, 0);
+
   const ctx = document.getElementById("pieChart");
+  if (!ctx) return;
 
   chinoChartInstances["pieChart"] = new Chart(ctx, {
     type: "pie",
     data: {
-      labels: rows.map(r => r.label),
+      labels: top.map(r => r.label),
       datasets: [{
-        data: rows.map(r => r.value)
+        data: top.map(r => r.value)
       }]
+    },
+    options: {
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const value = context.raw;
+              const percent = ((value / total) * 100).toFixed(1);
+              return `${context.label}: ${value} (${percent}%)`;
+            }
+          }
+        }
+      }
     }
   });
 }
 
 // ── INSIGHTS ────────────────────────────────
 function renderInsights(dataset, region) {
+  const data = filterData(dataset, region);
+  if (!data.length) return;
+
+  const values = data
+    .map(r => ({
+      country: r.country,
+      value: safeNum(r[selectedMetric])
+    }))
+    .filter(v => v.value !== null);
+
+  if (!values.length) return;
+
+  const maxObj = values.reduce((a, b) => a.value > b.value ? a : b);
+  const minObj = values.reduce((a, b) => a.value < b.value ? a : b);
+  const avg = values.reduce((a, b) => a + b.value, 0) / values.length;
+
+  const metricNames = {
+    gasoline_usd_per_liter: "gasoline price",
+    diesel_usd_per_liter: "diesel price",
+    lpg_usd_per_kg: "LPG price",
+    avg_monthly_income_usd: "average income",
+    fuel_affordability_index: "fuel affordability",
+    oil_import_dependency_pct: "oil dependency",
+    refinery_capacity_kbpd: "refinery capacity",
+    ev_adoption_pct: "EV adoption",
+    subsidy_cost_bn_usd: "fuel subsidy",
+    co2_transport_mt: "CO2 emissions",
+    gasoline_pct_daily_wage: "fuel burden"
+  };
+
+  const metricLabel = metricNames[selectedMetric] || "metric";
+
+  document.getElementById("chino-insights").innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Highest</div>
+      <div class="stat-value">${formatNumber(maxObj.value)}</div>
+      <div class="stat-description">
+        ${maxObj.country} has the highest ${metricLabel} in this region.
+      </div>
+    </div>
+
+    <div class="stat-card alt">
+      <div class="stat-label">Lowest</div>
+      <div class="stat-value">${formatNumber(minObj.value)}</div>
+      <div class="stat-description">
+        ${minObj.country} has the lowest ${metricLabel}, making it the most affordable.
+      </div>
+    </div>
+
+    <div class="stat-card alt-2">
+      <div class="stat-label">Average</div>
+      <div class="stat-value">${formatNumber(avg)}</div>
+      <div class="stat-description">
+        The average ${metricLabel} across the region is shown here.
+      </div>
+    </div>
+  `;
+}
+function renderSmartInsight(dataset, region) {
   const data = filterData(dataset, region);
 
   const values = data
@@ -248,26 +344,28 @@ function renderInsights(dataset, region) {
 
   if (!values.length) return;
 
-  const max = Math.max(...values);
-  const min = Math.min(...values);
   const avg = values.reduce((a, b) => a + b, 0) / values.length;
 
-  document.getElementById("chino-insights").innerHTML = `
-    <div class="stat-card">
-      <div class="stat-label">Highest</div>
-      <div class="stat-value">${max.toFixed(2)}</div>
-    </div>
+  let message = "";
 
-    <div class="stat-card alt">
-      <div class="stat-label">Lowest</div>
-      <div class="stat-value">${min.toFixed(2)}</div>
-    </div>
+  if (selectedMetric === "gasoline_usd_per_liter") {
+    message = avg > 1.5
+      ? "Fuel prices in this region are relatively high, which may impact daily expenses."
+      : "Fuel prices are relatively affordable in this region.";
+  }
 
-    <div class="stat-card alt-2">
-      <div class="stat-label">Average</div>
-      <div class="stat-value">${avg.toFixed(2)}</div>
-    </div>
-  `;
+  else if (selectedMetric === "ev_adoption_pct") {
+    message = avg > 50
+      ? "This region is leading in electric vehicle adoption."
+      : "EV adoption is still growing in this region.";
+  }
+
+  else {
+    message = "This metric provides insights into regional performance and trends.";
+  }
+
+  const el = document.getElementById("chino-analysis");
+  if (el) el.innerText = message;
 }
 
 // ── NO DATA ─────────────────────────────────
