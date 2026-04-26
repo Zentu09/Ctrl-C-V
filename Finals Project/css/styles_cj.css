@@ -36,6 +36,11 @@
     font-weight: 500;
 }
 
+.cj-explainer {
+    max-width: 980px;
+    line-height: 1.5;
+}
+
 .stats-wrapper {
     padding: 40px;
 }
@@ -230,6 +235,13 @@
     margin-bottom: 8px;
 }
 
+.stat-description {
+    font-size: 12px;
+    line-height: 1.4;
+    opacity: 0.9;
+    margin-bottom: 10px;
+}
+
 .stat-value {
     font-size: 24px;
     font-weight: 700;
@@ -253,6 +265,10 @@
 
 .stat-value.large {
     font-size: 28px;
+}
+
+.stat-card .stat-description:last-of-type {
+    margin-bottom: 0;
 }
 
 .stat-full {

@@ -55,6 +55,201 @@ function mode(data) {
     return modes.length === Object.keys(frequency).length ? 'No mode' : modes.join(', ');
 }
 
+function formatTwoDecimals(value) {
+    if (value === null || value === undefined || Number.isNaN(value)) return '-';
+    return Number(value).toFixed(2);
+}
+
+const METRIC_INSIGHTS = {
+    gasoline_usd_per_liter: {
+        noun: 'gasoline price',
+        highMeaning: 'fuel is more expensive',
+        lowMeaning: 'fuel is cheaper'
+    },
+    diesel_usd_per_liter: {
+        noun: 'diesel price',
+        highMeaning: 'diesel is more expensive',
+        lowMeaning: 'diesel is cheaper'
+    },
+    lpg_usd_per_kg: {
+        noun: 'LPG price',
+        highMeaning: 'LPG is more expensive',
+        lowMeaning: 'LPG is cheaper'
+    },
+    avg_monthly_income_usd: {
+        noun: 'average monthly income',
+        highMeaning: 'people earn more on average',
+        lowMeaning: 'people earn less on average'
+    },
+    fuel_affordability_index: {
+        noun: 'fuel affordability',
+        highMeaning: 'fuel takes up more of a budget',
+        lowMeaning: 'fuel is easier to afford'
+    },
+    oil_import_dependency_pct: {
+        noun: 'oil import dependency',
+        highMeaning: 'the region relies more on imported oil',
+        lowMeaning: 'the region relies less on imported oil'
+    },
+    refinery_capacity_kbpd: {
+        noun: 'refinery capacity',
+        highMeaning: 'the region can refine more fuel locally',
+        lowMeaning: 'the region can refine less fuel locally'
+    },
+    ev_adoption_pct: {
+        noun: 'EV adoption',
+        highMeaning: 'more people are using electric vehicles',
+        lowMeaning: 'fewer people are using electric vehicles'
+    },
+    subsidy_cost_bn_usd: {
+        noun: 'subsidy cost',
+        highMeaning: 'the government spends more on fuel support',
+        lowMeaning: 'the government spends less on fuel support'
+    },
+    co2_transport_mt: {
+        noun: 'transport CO2 emissions',
+        highMeaning: 'transport emissions are higher',
+        lowMeaning: 'transport emissions are lower'
+    },
+    gasoline_pct_daily_wage: {
+        noun: 'gasoline cost as a share of daily wage',
+        highMeaning: 'gasoline takes up more of a worker\'s pay',
+        lowMeaning: 'gasoline takes up less of a worker\'s pay'
+    }
+};
+
+function getMetricInsight(metricKey) {
+    return METRIC_INSIGHTS[metricKey] || {
+        noun: 'selected metric',
+        highMeaning: 'the value is higher',
+        lowMeaning: 'the value is lower'
+    };
+}
+
+function getValueDescriptor(value, referenceValue) {
+    if (referenceValue === 0) return 'around average';
+
+    const ratio = value / referenceValue;
+
+    if (ratio >= 1.2) return 'high';
+    if (ratio >= 1.05) return 'slightly above average';
+    if (ratio <= 0.8) return 'low';
+    if (ratio <= 0.95) return 'slightly below average';
+    return 'around average';
+}
+
+function getSpreadDescriptor(value, referenceValue) {
+    if (referenceValue === 0) return 'very little spread';
+
+    const ratio = value / referenceValue;
+
+    if (ratio >= 1.2) return 'a wide spread';
+    if (ratio >= 1.05) return 'a somewhat wide spread';
+    if (ratio <= 0.8) return 'a very stable pattern';
+    if (ratio <= 0.95) return 'a fairly stable pattern';
+    return 'a normal spread';
+}
+
+function getRelativeSummary(value, referenceValue, metricKey) {
+    const insight = getMetricInsight(metricKey);
+    const descriptor = getValueDescriptor(value, referenceValue);
+
+    if (descriptor === 'high') {
+        return `This region has a high ${insight.noun}, so ${insight.highMeaning}.`;
+    }
+
+    if (descriptor === 'low') {
+        return `This region has a low ${insight.noun}, so ${insight.lowMeaning}.`;
+    }
+
+    if (descriptor === 'slightly above average') {
+        return `This region is a little above average for ${insight.noun}, so it leans higher than most regions.`;
+    }
+
+    if (descriptor === 'slightly below average') {
+        return `This region is a little below average for ${insight.noun}, so it leans lower than most regions.`;
+    }
+
+    return `This region is around average for ${insight.noun}, so it is close to the normal level.`;
+}
+
+function getMedianSummary(value, referenceValue, metricKey) {
+    const insight = getMetricInsight(metricKey);
+    const descriptor = getValueDescriptor(value, referenceValue);
+
+    if (descriptor === 'high') {
+        return `The middle value is high, so a typical country in this region is on the expensive or large side for ${insight.noun}.`;
+    }
+
+    if (descriptor === 'low') {
+        return `The middle value is low, so a typical country in this region is on the cheaper or smaller side for ${insight.noun}.`;
+    }
+
+    if (descriptor === 'slightly above average') {
+        return `The middle value is a little above average, so a typical country in this region is a bit higher than most regions.`;
+    }
+
+    if (descriptor === 'slightly below average') {
+        return `The middle value is a little below average, so a typical country in this region is a bit lower than most regions.`;
+    }
+
+    return `The middle value is about average, so a typical country in this region is close to the normal level.`;
+}
+
+function getModeSummary(modeValue, metricKey) {
+    const insight = getMetricInsight(metricKey);
+
+    if (modeValue === 'No mode') {
+        return 'There is no repeated value, so no single number shows up most often.';
+    }
+
+    return `The most common value is ${modeValue}, so this ${insight.noun} is the one that shows up the most.`;
+}
+
+function getCorrelationSummary(correlationValue, metricKey) {
+    const insight = getMetricInsight(metricKey);
+    const strength = Math.abs(correlationValue);
+
+    let strengthText = 'very weak';
+    if (strength >= 0.8) strengthText = 'very strong';
+    else if (strength >= 0.6) strengthText = 'strong';
+    else if (strength >= 0.4) strengthText = 'moderate';
+    else if (strength >= 0.2) strengthText = 'weak';
+
+    const directionText = correlationValue > 0 ? 'move in the same direction' : correlationValue < 0 ? 'move in opposite directions' : 'do not clearly move together';
+    if (strengthText === 'very weak' || strengthText === 'weak') {
+        return `Pearson correlation is ${strengthText}, so there is only a weak link between ${insight.noun} and the country order.`;
+    }
+
+    return `Pearson correlation is ${strengthText}, so the values for ${insight.noun} and the country order tend to ${directionText}.`;
+}
+
+function getTrendSummary(regressionInfo, metricKey) {
+    const insight = getMetricInsight(metricKey);
+
+    if (regressionInfo.explanation.includes('very weak')) {
+        return `The trend is very weak, so there is almost no clear pattern in ${insight.noun} across the region.`;
+    }
+
+    if (regressionInfo.explanation.includes('very strong')) {
+        return 'The trend is very strong, so the values follow a very clear pattern across the region.';
+    }
+
+    if (regressionInfo.explanation.includes('strong')) {
+        return 'The trend is strong, so the values follow a clear pattern across the region.';
+    }
+
+    if (regressionInfo.explanation.includes('moderate')) {
+        return 'The trend is moderate, so the pattern is there but not perfect.';
+    }
+
+    if (regressionInfo.explanation.includes('weak')) {
+        return `The trend is weak, so ${insight.noun} does not change in a very steady way.`;
+    }
+
+    return `The trend is mixed, so ${insight.noun} changes in a less predictable way.`;
+}
+
 function pearsonCorr(x, y) {
     if (x.length !== y.length || x.length === 0) return 0;
     
@@ -110,6 +305,12 @@ function linearRegression(x, y) {
 function displayCountriesList(countries) {
     const listDiv = document.getElementById('countryList');
     listDiv.innerHTML = '';
+
+    const allButton = document.createElement('button');
+    allButton.textContent = 'All Regions';
+    allButton.className = 'country-btn';
+    allButton.onclick = () => selectCountry('All Regions');
+    listDiv.appendChild(allButton);
     
     countries.forEach(country => {
         const btn = document.createElement('button');
@@ -146,13 +347,13 @@ function getRegressionExplanation(regression) {
         trendStrength = "very weak";
     }
     
-    const explanation = `${trendStrength.charAt(0).toUpperCase() + trendStrength.slice(1)} ${trendDirection} trend (${(r2 * 100).toFixed(1)}% fit)`;
+    const explanation = `${trendStrength.charAt(0).toUpperCase() + trendStrength.slice(1)} ${trendDirection} trend (${(r2 * 100).toFixed(2)}% fit)`;
     
     return {
-        equation: `y = ${slope}x + ${intercept}`,
+        equation: `y = ${slope.toFixed(2)}x + ${intercept.toFixed(2)}`,
         explanation: explanation,
         r2: r2,
-        r2Percent: (r2 * 100).toFixed(1)
+        r2Percent: (r2 * 100).toFixed(2)
     };
 }
 
@@ -161,8 +362,10 @@ function updateMetric() {
     
     if (!selectedRegion) return;
     
-    // Get all countries in the selected region
-    const regionRecords = csvData.filter(record => record.sub_region === selectedRegion);
+    // Get all countries in the selected region, or the full dataset for All Regions
+    const regionRecords = selectedRegion === 'All Regions'
+        ? csvData
+        : csvData.filter(record => record.sub_region === selectedRegion);
     
     if (regionRecords.length === 0) {
         alert('No data found for ' + selectedRegion);
@@ -191,6 +394,11 @@ function updateMetric() {
     
     // Calculate mode
     const modeValue = mode(metricValues);
+
+    const overallMean = mean(csvData.map(record => parseFloat(record[currentMetric])).filter(x => !isNaN(x)));
+    const overallMedian = median(csvData.map(record => parseFloat(record[currentMetric])).filter(x => !isNaN(x)));
+    const overallStdDev = stdDev(csvData.map(record => parseFloat(record[currentMetric])).filter(x => !isNaN(x)));
+    const overallVariance = variance(csvData.map(record => parseFloat(record[currentMetric])).filter(x => !isNaN(x)));
     
     // Display results for entire region
     const metricLabel = document.getElementById('metricSelect').options[
@@ -198,14 +406,22 @@ function updateMetric() {
     ].text;
     
     document.getElementById('selectedCountry').textContent = selectedRegion + ' - ' + metricLabel;
-    document.getElementById('mean').textContent = mean(metricValues).toFixed(2);
-    document.getElementById('median').textContent = median(metricValues).toFixed(2);
-    document.getElementById('stddev').textContent = stdDev(metricValues).toFixed(4);
-    document.getElementById('variance').textContent = variance(metricValues).toFixed(4);
-    document.getElementById('mode').textContent = modeValue;
-    document.getElementById('pearson').textContent = correlationValue.toFixed(4);
+    document.getElementById('mean').textContent = formatTwoDecimals(mean(metricValues));
+    document.getElementById('median').textContent = formatTwoDecimals(median(metricValues));
+    document.getElementById('stddev').textContent = formatTwoDecimals(stdDev(metricValues));
+    document.getElementById('variance').textContent = formatTwoDecimals(variance(metricValues));
+    document.getElementById('mode').textContent = modeValue === 'No mode' ? modeValue : modeValue.split(', ').map(value => formatTwoDecimals(value)).join(', ');
+    document.getElementById('pearson').textContent = formatTwoDecimals(correlationValue);
     document.getElementById('regression').innerHTML = `<strong>${regressionInfo.explanation}</strong><br><small>${regressionInfo.equation} (R² = ${regressionInfo.r2Percent}%)</small>`;
     document.getElementById('dataCount').textContent = metricValues.length;
+
+    document.getElementById('meanDescription').textContent = getRelativeSummary(mean(metricValues), overallMean, currentMetric);
+    document.getElementById('medianDescription').textContent = getMedianSummary(median(metricValues), overallMedian, currentMetric);
+    document.getElementById('stddevDescription').textContent = `This region has ${getSpreadDescriptor(stdDev(metricValues), overallStdDev)}, which tells you how similar or different the countries are.`;
+    document.getElementById('varianceDescription').textContent = `This region has ${getSpreadDescriptor(variance(metricValues), overallVariance)}, which is another way of showing how spread out the values are.`;
+    document.getElementById('modeDescription').textContent = getModeSummary(modeValue, currentMetric);
+    document.getElementById('pearsonDescription').textContent = getCorrelationSummary(correlationValue, currentMetric);
+    document.getElementById('regressionDescription').textContent = `${regressionInfo.explanation}. ${getTrendSummary(regressionInfo, currentMetric)}`;
 }
 
 function loadCountries() {
