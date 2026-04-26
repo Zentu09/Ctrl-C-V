@@ -8,14 +8,16 @@ const visibleColumns = [
     "Price Date"
 ];
 
+let lastSortField = localStorage.getItem("sortField") || "country";
+let lastSortDirection = localStorage.getItem("sortDirection") || "asc";
+
 let markedRows = JSON.parse(localStorage.getItem("markedRows")) || {};
 
 let dataset = [];
 let filteredData = [];
 let selectedRegions = new Set();
 let selectedSubsidy = "all";
-let lastSortField = "country";
-let lastSortDirection = "asc";
+
 
 // Modal elements
 const modal = document.getElementById("modal");
@@ -25,7 +27,30 @@ const closeModalBtn = document.getElementById("closeModal");
 
 // ====================== VIEW DETAILS MODAL (UNCHANGED - Your Original) ======================
 function openModal(data) {
-    modalTitle.innerHTML = `<h2>${data.country}</h2>`;
+    const raw = data.raw || data;
+    const iso3 = raw.iso3 || '';
+    const countryName = raw.country || data.country || 'Country';
+    const subRegion = raw.sub_region || raw.subRegion || '';
+
+    const iso2 = iso3 ? iso3ToIso2(iso3) : '';
+
+    // Background Flag (full width, faded)
+    const flagBg = document.getElementById('modalFlagBg');
+    if (flagBg && iso2) {
+        flagBg.src = `https://flagcdn.com/w1280/${iso2.toLowerCase()}.png`;
+    }
+
+    // Small centered flag on top
+    const flagSmall = document.getElementById('modalFlag');
+    if (flagSmall && iso2) {
+        flagSmall.src = `https://flagcdn.com/w320/${iso2.toLowerCase()}.png`;
+    }
+
+    // Text
+    document.getElementById('modalTitle').textContent = countryName;
+    document.getElementById('modalSubRegion').textContent = subRegion;
+
+    // Body content
     modalBody.innerHTML = buildModalFields(data);
     modal.classList.remove("hidden");
 }
@@ -88,75 +113,169 @@ function formatValue(value, key) {
     return value;
 }
 
-// ====================== ADVANCED FILTER MODAL (Region Selection Fixed) ======================
-function openFilterModal() {
-    let html = `
-        <h2 style="margin:0 0 15px 0;">Filter & Sort Options</h2>
-        
-        <p><strong>Regions (leave all unchecked to show ALL countries)</strong></p>
-        <div id="regionCheckboxes" style="max-height:200px; overflow-y:auto; border:1px solid #ddd; padding:12px; border-radius:6px; background:#f9f9f9; min-height:80px;">
-            <em>Loading regions...</em>
-        </div>
-
-        <p style="margin-top:15px;"><strong>Subsidy Status</strong></p>
-        <label><input type="radio" name="subsidyFilter" value="all" ${selectedSubsidy === "all" ? "checked" : ""}> All Countries</label><br>
-        <label><input type="radio" name="subsidyFilter" value="active" ${selectedSubsidy === "active" ? "checked" : ""}> Active Subsidy Only</label><br>
-        <label><input type="radio" name="subsidyFilter" value="inactive" ${selectedSubsidy === "inactive" ? "checked" : ""}> Inactive Subsidy Only</label>
-
-        <p style="margin-top:15px;"><strong>Sort By</strong></p>
-        <select id="sortField" style="width:100%; padding:8px; margin-bottom:10px;">
-            <option value="country" ${lastSortField === "country" ? "selected" : ""}>Country Name</option>
-            <option value="gasoline" ${lastSortField === "gasoline" ? "selected" : ""}>Gasoline Price</option>
-            <option value="diesel" ${lastSortField === "diesel" ? "selected" : ""}>Diesel Price</option>
-            <option value="lpg" ${lastSortField === "lpg" ? "selected" : ""}>LPG Price</option>
-            <option value="index" ${lastSortField === "index" ? "selected" : ""}>Affordability Index</option>
-            <option value="oil_import" ${lastSortField === "oil_import" ? "selected" : ""}>Oil Import Dependency %</option>
-        </select>
-        <label><input type="radio" name="sortDirection" value="asc" ${lastSortDirection === "asc" ? "checked" : ""}> Ascending</label><br>
-        <label><input type="radio" name="sortDirection" value="desc" ${lastSortDirection === "desc" ? "checked" : ""}> Descending</label>
-
-        <div style="text-align:right; margin-top:25px;">
-            <button onclick="applyAdvancedFilter()" style="padding:10px 18px; background:#254fb0; color:white; border:none; border-radius:6px;">Apply</button>
-            <button onclick="closeModalFunc()" style="padding:10px 18px; margin-left:8px; background:#ddd;">Cancel</button>
-        </div>
-    `;
-
-    modalTitle.innerHTML = html;
-    modalBody.innerHTML = "";
-    modal.classList.remove("hidden");
-
-    // Populate regions AFTER modal is shown
-    setTimeout(populateRegions, 50);
+function iso3ToIso2(iso3) {
+    if (!iso3) return null;
+    const map = {
+        "AFG": "AF", "BGD": "BD", "BRN": "BN", "KHM": "KH", "CHN": "CN",
+        "IDN": "ID", "IND": "IN", "JPN": "JP", "KOR": "KR", "LAO": "LA",
+        "LKA": "LK", "MYS": "MY", "MMR": "MM", "MNG": "MN", "NPL": "NP",
+        "PAK": "PK", "PHL": "PH", "SGP": "SG", "THA": "TH", "TLS": "TL",
+        "TWN": "TW", "VNM": "VN"
+        // You can add more countries later easily
+    };
+    return map[iso3.toUpperCase()] || null;
 }
 
+// Convert ISO2 code to Flag Emoji (this part is correct)
+function getFlagEmoji(iso2) {
+    if (!iso2 || iso2.length !== 2) return "🌍";
+    
+    return iso2
+        .toUpperCase()
+        .split('')
+        .map(char => String.fromCodePoint(0x1F1E6 + char.charCodeAt(0) - 65))
+        .join('');
+}
 
-function populateRegions() {
+// ====================== ADVANCED FILTER MODAL (Region Selection Fixed) ======================
+function openFilterModal() {
+    const filterModal = document.getElementById('filterModal');
+    const filterBody = document.getElementById('filterModalBody');
+
+    if (!filterModal || !filterBody) return;
+
+    let html = `
+    <div class="modern-filter">
+
+        <!-- REGIONS -->
+        <div class="filter-card">
+            <h3>Regions</h3>
+            <p class="hint">Leave empty to show all</p>
+            <div id="regionChips" class="chips">
+                <em>Loading regions...</em>
+            </div>
+        </div>
+
+        <!-- SUBSIDY -->
+        <div class="filter-card">
+            <h3>Subsidy</h3>
+            <div class="radio-group">
+                <label><input type="radio" name="subsidyFilter" value="all" ${selectedSubsidy === "all" ? "checked" : ""}> All</label>
+                <label><input type="radio" name="subsidyFilter" value="active" ${selectedSubsidy === "active" ? "checked" : ""}> Active</label>
+                <label><input type="radio" name="subsidyFilter" value="inactive" ${selectedSubsidy === "inactive" ? "checked" : ""}> Inactive</label>
+            </div>
+        </div>
+
+        <!-- SORT -->
+        <div class="filter-card">
+            <h3>Sort</h3>
+            <div class="sort-grid">
+                <select id="sortField">
+
+                    <!-- Basic -->
+                    <option value="country" ${lastSortField === "country" ? "selected" : ""}>Country</option>
+                    <option value="region" ${lastSortField === "region" ? "selected" : ""}>Region</option>
+
+                    <!-- Prices -->
+                    <option value="gasoline" ${lastSortField === "gasoline" ? "selected" : ""}>Gasoline Price</option>
+                    <option value="diesel" ${lastSortField === "diesel" ? "selected" : ""}>Diesel Price</option>
+                    <option value="lpg" ${lastSortField === "lpg" ? "selected" : ""}>LPG Price</option>
+
+                    <!-- Economy -->
+                    <option value="income" ${lastSortField === "income" ? "selected" : ""}>Monthly Income</option>
+                    <option value="index" ${lastSortField === "index" ? "selected" : ""}>Affordability Index</option>
+
+                    <!-- Energy -->
+                    <option value="oil_import" ${lastSortField === "oil_import" ? "selected" : ""}>Oil Import %</option>
+                    <option value="refinery" ${lastSortField === "refinery" ? "selected" : ""}>Refinery Capacity</option>
+                    <option value="ev" ${lastSortField === "ev" ? "selected" : ""}>EV Adoption %</option>
+
+                    <!-- Government / Impact -->
+                    <option value="subsidy" ${lastSortField === "subsidy" ? "selected" : ""}>Subsidy Status</option>
+                    <option value="subsidy_cost" ${lastSortField === "subsidy_cost" ? "selected" : ""}>Subsidy Cost</option>
+                    <option value="co2" ${lastSortField === "co2" ? "selected" : ""}>CO₂ Transport</option>
+
+                    <!-- Other -->
+                    <option value="wage_pct" ${lastSortField === "wage_pct" ? "selected" : ""}>Gasoline % Daily Wage</option>
+                    <option value="date" ${lastSortField === "date" ? "selected" : ""}>Price Date</option>
+
+                </select>
+
+                <select id="sortDirection">
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="filter-actions modern-actions">
+            <button class="apply-btn" onclick="applyAdvancedFilter()">Apply</button>
+            <button class="cancel-btn" onclick="closeFilterModal()">Cancel</button>
+        </div>
+    </div>
+    `;
+
+    filterBody.innerHTML = html;
+    filterModal.classList.remove("hidden");
+    setTimeout(populateRegionsChips, 50);    
+    setTimeout(() => {
+        document.getElementById("sortField").value = lastSortField;
+        document.getElementById("sortDirection").value = lastSortDirection;
+    }, 0);
+
+}
+
+function closeFilterModal() {
+    const filterModal = document.getElementById('filterModal');
+    if (filterModal) filterModal.classList.add("hidden");
+}
+
+// Close filter modal when clicking outside
+document.addEventListener('click', (e) => {
+    const filterModal = document.getElementById('filterModal');
+    if (filterModal && e.target === filterModal) {
+        closeFilterModal();
+    }
+});
+
+// Close button for filter modal
+document.addEventListener('DOMContentLoaded', () => {
+    const closeFilterBtn = document.getElementById('closeFilterModal');
+    if (closeFilterBtn) {
+        closeFilterBtn.addEventListener('click', closeFilterModal);
+    }
+});
+
+function populateRegionsChips() {
+    const container = document.getElementById("regionChips");
+
     if (!dataset || dataset.length === 0) {
-        document.getElementById("regionCheckboxes").innerHTML = "<em>No data loaded yet...</em>";
+        container.innerHTML = "<em>No data</em>";
         return;
     }
 
-    const regions = [...new Set(dataset.map(item => {
-        // Try multiple possible column names
-        return item.raw.sub_region || 
-               item.raw.region || 
-               item.raw.Region || 
-               item.raw.Sub_Region || 
-               "Unknown";
-    }))].filter(r => r && r !== "Unknown").sort();
+    const regions = [...new Set(dataset.map(item =>
+        item.raw.sub_region || item.raw.region || "Unknown"
+    ))].filter(r => r !== "Unknown").sort();
 
-    let chkHtml = '';
-    regions.forEach(reg => {
-        const checked = selectedRegions.has(reg) ? "checked" : "";
-        chkHtml += `
-            <label style="display:block; margin:6px 0; font-size:0.95rem;">
-                <input type="checkbox" value="${reg}" ${checked} onchange="toggleRegionFilter(this)"> ${reg}
-            </label>`;
-    });
+    container.innerHTML = regions.map(region => {
+        const active = selectedRegions.has(region) ? "active" : "";
+        return `
+            <div class="chip ${active}" onclick="toggleChip(this, '${region}')">
+                ${region}
+            </div>
+        `;
+    }).join("");
+}
 
-    const container = document.getElementById("regionCheckboxes");
-    if (container) {
-        container.innerHTML = chkHtml || "<em>No regions found in data</em>";
+function toggleChip(el, region) {
+    if (selectedRegions.has(region)) {
+        selectedRegions.delete(region);
+        el.classList.remove("active");
+    } else {
+        selectedRegions.add(region);
+        el.classList.add("active");
     }
 }
 
@@ -204,29 +323,54 @@ function applyAdvancedFilter() {
         });
     }
 
+    localStorage.setItem("sortField", lastSortField);
+    localStorage.setItem("sortDirection", lastSortDirection);
+
     // Sorting
     const field = lastSortField;
     const direction = lastSortDirection;
 
     data.sort((a, b) => {
-        let va = 0, vb = 0;
-        switch(field) {
+        let va, vb;
+
+        switch(lastSortField) {
+
             case "country":
-                va = (a.country || "").toString().toLowerCase();
-                vb = (b.country || "").toString().toLowerCase();
-                return direction === "asc" ? va.localeCompare(vb) : vb.localeCompare(va);
-            case "gasoline": va = parseFloat(a.gasoline)||0; vb = parseFloat(b.gasoline)||0; break;
-            case "diesel":   va = parseFloat(a.diesel)||0;   vb = parseFloat(b.diesel)||0;   break;
-            case "lpg":      va = parseFloat(a.lpg)||0;      vb = parseFloat(b.lpg)||0;      break;
-            case "index":    va = parseFloat(a.index)||0;    vb = parseFloat(b.index)||0;    break;
-            case "oil_import": va = parseFloat(a.oil_import)||0; vb = parseFloat(b.oil_import)||0; break;
+                va = (a.country || "").toLowerCase();
+                vb = (b.country || "").toLowerCase();
+                break;
+
+            case "region":
+                va = (a.region || "").toLowerCase();
+                vb = (b.region || "").toLowerCase();
+                break;
+
+            case "subsidy":
+                va = String(a.subsidy).toUpperCase() === "TRUE" ? 1 : 0;
+                vb = String(b.subsidy).toUpperCase() === "TRUE" ? 1 : 0;
+                break;
+
+            case "date":
+                va = new Date(a.date).getTime() || 0;
+                vb = new Date(b.date).getTime() || 0;
+                break;
+
+            default:
+                // everything else = numeric
+                va = parseFloat(a[lastSortField]) || 0;
+                vb = parseFloat(b[lastSortField]) || 0;
         }
-        return direction === "asc" ? va - vb : vb - va;
+
+        // ✅ SINGLE consistent comparison
+        if (va < vb) return lastSortDirection === "asc" ? -1 : 1;
+        if (va > vb) return lastSortDirection === "asc" ? 1 : -1;
+        return 0;
     });
 
+    closeFilterModal();
     filteredData = data;
     renderTable(filteredData);
-    closeModalFunc();
+    
 }
 
 // ====================== RENDER TABLE ======================
@@ -389,6 +533,13 @@ class FuelData {
         this.oil_import = data.oil_import_dependency_pct;
         this.subsidy = data.fuel_subsidy_active;
         this.date = data.price_date;
+        this.region = data.sub_region;
+        this.income = data.avg_monthly_income_usd;
+        this.refinery = data.refinery_capacity_kbpd;
+        this.ev = data.ev_adoption_pct;
+        this.subsidy_cost = data.subsidy_cost_bn_usd;
+        this.co2 = data.co2_transport_mt;
+        this.wage_pct = data.gasoline_pct_daily_wage;
     }
 
     getTableRow() {

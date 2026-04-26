@@ -17,9 +17,13 @@
 
 
     <div class="sidebar">
-        <a href="#section-art" class="sidebar-link active" data-target="section-art">Dataset Viewer</a>
-        <a href="#section-chino" class="sidebar-link" data-target="section-chino">Data Visualizations</a>
-        <a href="#section-cj" class="sidebar-link" data-target="section-cj">Data Analysis</a>
+        <div class="fuell">
+            <img src="css/Logo.png" alt="image" class="logo">
+            <div class="ftext">FuelScope</div>
+        </div>        
+        <a href="#section-art" class="sidebar-link active" data-target="section-art"><i class="fa-solid fa-database"></i>  Dataset Viewer</a>
+        <a href="#section-chino" class="sidebar-link" data-target="section-chino"><i class="fa-solid fa-chart-column"></i>  Data Visualizations</a>
+        <a href="#section-cj" class="sidebar-link" data-target="section-cj"><i class="fa-solid fa-chalkboard"></i>  Data Analysis</a>
     </div>
 
     <div class="main-content">
@@ -31,7 +35,23 @@
             <div class="card1">
                 <div class="controls">
                     <input type="text" class="box-input" id="searchInput" placeholder="Search Values...">
-                    <button onclick="openFilterModal()"><i class="fa fa-filter" aria-hidden="true"></i></button>
+                    <button onclick="openFilterModal()" class="filter-btn"><i class="fa fa-filter" aria-hidden="true"></i></button>
+                </div>
+
+                <!-- CENTERED FILTER MODAL -->
+                <div id="filterModal" class="modal-filter hidden">
+                    <div class="modal-content-filter filter-modal-content centered-modal">
+                        
+                        <div class="modal-header filter-modal-header">
+                            <span id="closeFilterModal" class="close">&times;</span>
+                            <h2>Filter & Sort Options</h2>
+                        </div>
+
+                        <div id="filterModalBody" class="modal-body-filter">
+                            <!-- JS will fill this -->
+                        </div>
+
+                    </div>
                 </div>
 
                 <div class="layer-tab">
@@ -50,7 +70,16 @@
 
                         <div class="modal-header">
                             <span id="closeModal" class="close">&times;</span>
-                            <div id="modalTitle"></div>
+                            
+                            <!-- Flag Background Header - No small flag -->
+                            <div id="modalHeroHeader" class="hero-header">
+                                <img id="modalFlagBg" src="" alt="" class="flag-bg">
+                                
+                                <div class="hero-content">
+                                    <h2 id="modalTitle"></h2>
+                                    <p id="modalSubRegion"></p>
+                                </div>
+                            </div>
                         </div>
 
                         <div id="modalBody" class="modal-body"></div>
