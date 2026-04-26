@@ -5,18 +5,21 @@
    ============================================= */
 
 body {
- 
+  overflow-y: auto;
 }
 
+.main-content {
+  overflow-y: auto;
+  max-height: 100vh;
+}
 
-
-#section-chino { 
+/* ── Section wrapper ──────────────────────────── */
+#section-chino {
+  padding: 32px 36px;
   background: #111827;
-  
+  min-height: 100vh;
+  box-sizing: border-box;
   font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-  
-  /* Optional: keep your dark theme consistent */
-  color: #e2e8f0;
 }
 
 /* ── Section header ───────────────────────────── */
