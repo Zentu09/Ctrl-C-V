@@ -122,20 +122,23 @@
         <div id="cj-statistical-engine">
             <div class="engine-header">
                 <h2>📊 Statistical Analysis Engine</h2>
-                <p class="data-source">Asia Fuel Prices Analysis by Region</p>
+                <p class="data-source">Asia Fuel Prices Analysis by Country</p>
             </div>
             
             <div class="stats-wrapper">
                 <div class="stats-controls">
                     <div class="control-section">
-                        <h3>🌍 Select Region</h3>
-                        <input type="text" id="countrySearch" placeholder="🔍 Search region...">
-                        <div id="countryList" class="country-list"></div>
+                        <h3>🌍 Select Sub Region</h3>
+                        <select id="cjRegionSelect" onchange="onCjRegionChange()">
+                            <option value="ALL">All Countries</option>
+                        </select>
+                        <button type="button" class="cj-filter-btn" onclick="openCountryFilterModal()"><i class="fa fa-filter" aria-hidden="true"></i> Filter Countries</button>
+                        <p class="selection-hint">Pick any countries to compare their statistics.</p>
                     </div>
                     
                     <div class="control-section">
                         <h3>📊 Select Metric</h3>
-                        <select id="metricSelect" onchange="updateMetric()">
+                                <select id="cjMetricSelect" onchange="updateMetric()">
                             <option value="gasoline_usd_per_liter">⛽ Gasoline USD/Liter</option>
                             <option value="diesel_usd_per_liter">⛽ Diesel USD/Liter</option>
                             <option value="lpg_usd_per_kg">⛽ LPG USD/Kg</option>

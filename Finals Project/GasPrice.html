@@ -128,16 +128,46 @@
                     </div>
                 </div>
             </div>
-        </div>
+      </div>
+      </div>
+               
 
-
-            <!-- PART NI CJ-->
-            <div id="section-cj" class="section">
-                <div class="card3">
-                    <div id="cj-statistical-engine">
-                        <div class="engine-header">
-                            <h2>📊 Statistical Analysis Engine</h2>
-                            <p class="data-source">Asia Fuel Prices Analysis by Region</p>
+        <!-- PART NI CJ-->
+        <div id="section-cj" class="section" >
+            <div class="card3">
+                <div id="cj-statistical-engine">
+                    <div class="engine-header">
+                        <h2>📊 Statistical Analysis Engine</h2>
+                        <p class="data-source">Asia Fuel Prices Analysis by Country</p>
+                    </div>
+                    
+                    <div class="stats-wrapper">
+                        <div class="stats-controls">
+                            <div class="control-section">
+                                <h3>🌍 Select Sub Region</h3>
+                                <select id="cjRegionSelect" onchange="onCjRegionChange()">
+                                    <option value="ALL">All Countries</option>
+                                </select>
+                                <button type="button" class="cj-filter-btn" onclick="openCountryFilterModal()"><i class="fa fa-filter" aria-hidden="true"></i> Filter Countries</button>
+                                <p class="selection-hint">Pick any countries to compare their statistics.</p>
+                            </div>
+                            
+                            <div class="control-section">
+                                <h3>📊 Select Metric</h3>
+                                <select id="cjMetricSelect" onchange="updateMetric()">
+                                    <option value="gasoline_usd_per_liter">⛽ Gasoline USD/Liter</option>
+                                    <option value="diesel_usd_per_liter">⛽ Diesel USD/Liter</option>
+                                    <option value="lpg_usd_per_kg">⛽ LPG USD/Kg</option>
+                                    <option value="avg_monthly_income_usd">💰 Avg Monthly Income USD</option>
+                                    <option value="fuel_affordability_index">📈 Fuel Affordability Index</option>
+                                    <option value="oil_import_dependency_pct">📊 Oil Import Dependency %</option>
+                                    <option value="refinery_capacity_kbpd">🏭 Refinery Capacity KBPD</option>
+                                    <option value="ev_adoption_pct">🔋 EV Adoption %</option>
+                                    <option value="subsidy_cost_bn_usd">💵 Subsidy Cost Bn USD</option>
+                                    <option value="co2_transport_mt">♻️ CO2 Transport Mt</option>
+                                    <option value="gasoline_pct_daily_wage">📉 Gasoline % Daily Wage</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="stats-wrapper">
