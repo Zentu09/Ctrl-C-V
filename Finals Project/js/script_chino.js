@@ -564,7 +564,7 @@ function renderSmartInsight(dataset, region) {
   }
 
   else {
-    message = "This metric provides insights into regional performance and trends.";
+    message = "";
   }
 
   const el = document.getElementById("chino-analysis");
