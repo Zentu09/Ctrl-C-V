@@ -19,13 +19,13 @@
 #section-chino .chino-header h2 {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #051e3f;
+  color: #ffffff;
   margin: 0 0 4px 0;
   letter-spacing: -0.02em;
 }
 
 #section-chino .chino-header p {
-  color: #0d2547;
+  color: #fdfdfd;
   font-size: 0.9rem;
   margin: 0;
 }
@@ -34,9 +34,9 @@
 .chino-region-selector {
   margin-bottom: 28px;
   padding: 16px 20px;
-  background: #1e293b;
+  background: #0f172a;
   border-radius: 8px;
-  border-left: 4px solid #4f8ef7;
+  border-left: 4px solid #0f4a6f;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -51,9 +51,9 @@
 
 .chino-region-selector select {
   padding: 8px 12px;
-  background: #0f172a;
-  color: #e2e8f0;
-  border: 1px solid #334155;
+  background: #ffffff;
+  color: #16488e;
+  border: 1px solid #deecff;
   border-radius: 6px;
   font-size: 0.9rem;
   cursor: pointer;
@@ -72,8 +72,8 @@
 }
 
 .chino-region-selector select option {
-  background: #0f172a;
-  color: #e2e8f0;
+  background: hsl(0, 0%, 100%);
+  color: #16488e;
 }
 
 /* ── Chart grid ───────────────────────────────── */
