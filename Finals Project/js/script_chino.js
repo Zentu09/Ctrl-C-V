@@ -202,13 +202,40 @@ function drawBarChart(dataset, region) {
 }
 
 // ── SCATTER ─────────────────────────────────
+
+let scatterYMetric = "ev_adoption_pct"; // default
+function onScatterMetricChange() {
+  scatterYMetric = document.getElementById("metricYSelect").value;
+  initCharts(window._chinoDataset, window._chinoSelectedRegion);
+}
+
 function drawScatterPlot(dataset, region) {
+
+  const xMetric = selectedMetric;
+  const yMetric = scatterYMetric;
+
+  // ✅ VALIDATION (ONLY ONE, correct placement)
+  if (xMetric === yMetric) {
+    destroyIfExists("scatterChart");
+
+    const ctx = document.getElementById("scatterChart");
+    if (ctx) {
+      const c = ctx.getContext("2d");
+      c.clearRect(0, 0, ctx.width, ctx.height);
+      c.fillStyle = "#888";
+      c.textAlign = "center";
+      c.fillText("Please select two different metrics", ctx.width / 2, ctx.height / 2);
+    }
+    return;
+  }
+
+  // ✅ destroy AFTER validation
   destroyIfExists("scatterChart");
 
   const data = filterData(dataset, region)
     .map(r => ({
-      x: safeNum(r.fuel_affordability_index),
-      y: safeNum(r.ev_adoption_pct)
+      x: safeNum(r[xMetric]),
+      y: safeNum(r[yMetric])
     }))
     .filter(d => d.x !== null && d.y !== null);
 
@@ -220,7 +247,7 @@ function drawScatterPlot(dataset, region) {
     type: "scatter",
     data: {
       datasets: [{
-        label: "Affordability vs EV Adoption",
+        label: `${getMetricLabel(xMetric)} vs ${getMetricLabel(yMetric)}`,
         data,
         pointRadius: 6,
         pointHoverRadius: 8,
@@ -228,42 +255,42 @@ function drawScatterPlot(dataset, region) {
       }]
     },
     options: {
-  responsive: true,
-  maintainAspectRatio: false,
+      responsive: true,
+      maintainAspectRatio: false,
 
-  plugins: {
-    legend: {
-      labels: {
-        color: "#e5e7eb",
-        font: {
-          size: 12,
-          weight: "600"
+      plugins: {
+        legend: {
+          labels: {
+            color: "#e5e7eb",
+            font: {
+              size: 12,
+              weight: "600"
+            }
+          }
+        }
+      },
+
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: getMetricLabel(xMetric),
+            color: "#9ca3af"
+          },
+          ticks: { color: "#9ca3af" },
+          grid: { color: "rgba(255,255,255,0.05)" }
+        },
+        y: {
+          title: {
+            display: true,
+            text: getMetricLabel(yMetric),
+            color: "#9ca3af"
+          },
+          ticks: { color: "#9ca3af" },
+          grid: { color: "rgba(255,255,255,0.05)" }
         }
       }
     }
-  },
-
-  scales: {
-    x: {
-      title: {
-        display: true,
-        text: "Fuel Affordability Index",
-        color: "#9ca3af"
-      },
-      ticks: { color: "#9ca3af" },
-      grid: { color: "rgba(255,255,255,0.05)" }
-    },
-    y: {
-      title: {
-        display: true,
-        text: "EV Adoption (%)",
-        color: "#9ca3af"
-      },
-      ticks: { color: "#9ca3af" },
-      grid: { color: "rgba(255,255,255,0.05)" }
-    }
-  }
-}
   });
 }
 
