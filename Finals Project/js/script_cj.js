@@ -53,8 +53,11 @@ function mode(data) {
         }
     }
     
-    const hasZeroMode = modes.some(value => Number(value) === 0);
-    return modes.length === Object.keys(frequency).length || hasZeroMode ? 'No mode' : modes.join(', ');
+    // Return "No mode" if all values appear equally or if only one value appears once
+    if (modes.length === Object.keys(frequency).length) return 'No mode';
+    
+    // Return only the first mode when there are ties
+    return modes.length > 0 ? modes[0] : 'No mode';
 }
 
 function formatTwoDecimals(value) {
