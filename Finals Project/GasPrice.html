@@ -106,7 +106,7 @@
 
                 <!-- Metric Selector -->
                 <div class="chino-region-selector">
-                    <label><strong>📊 Select Metric:</strong></label>
+                    <label><strong>Metric:</strong></label>
                     <select id="metricSelectChino" onchange="onMetricChange()">
                         <option value="gasoline_usd_per_liter">Gasoline USD/Liter</option>
                         <option value="diesel_usd_per_liter">Diesel USD/Liter</option>
@@ -121,6 +121,24 @@
                         <option value="gasoline_pct_daily_wage">Gasoline % Daily Wage</option>
                     </select>
                 </div>
+
+                    <div class="chino-region-selector">
+                    <label><strong>📊 Y-Axis Metric:</strong></label>
+                    <select id="metricYSelect" onchange="onScatterMetricChange()">
+                        <option value="gasoline_usd_per_liter">Gasoline USD/Liter</option>
+                        <option value="diesel_usd_per_liter">Diesel USD/Liter</option>
+                        <option value="lpg_usd_per_kg">LPG USD/Kg</option>
+                        <option value="avg_monthly_income_usd">Avg Monthly Income USD</option>
+                        <option value="fuel_affordability_index">Fuel Affordability Index</option>
+                        <option value="oil_import_dependency_pct">Oil Import Dependency %</option>
+                        <option value="refinery_capacity_kbpd">Refinery Capacity KBPD</option>
+                        <option value="ev_adoption_pct">EV Adoption %</option>
+                        <option value="subsidy_cost_bn_usd">Subsidy Cost Bn USD</option>
+                        <option value="co2_transport_mt">CO2 Transport Mt</option>
+                        <option value="gasoline_pct_daily_wage">Gasoline % Daily Wage</option>
+                    </select>
+                    </div>
+                
 
                 <!-- INSIGHTS -->
                 <div id="chino-insights" class="stats-grid"></div>
